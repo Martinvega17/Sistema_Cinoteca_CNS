@@ -1,0 +1,410 @@
+:root {
+    --bg-deep: #0B121B;
+    --bg-panel: #141E2B;
+    --bg-panel-2: #182432;
+    --line: #26374A;
+    --line-soft: #1D2C3D;
+    --text-hi: #E9EFF5;
+    --text-mid: #9BAEC2;
+    --text-dim: #5E7085;
+    --accent: #C79A3E;
+    --accent-soft: #8A6E2E;
+    --teal: #3E8C93;
+    --danger: #B5533C;
+    --ok: #4E9E6E;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    background: var(--bg-deep);
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    color: var(--text-hi);
+    background-image:
+        radial-gradient(circle at 15% -10%, rgba(62, 140, 147, 0.10), transparent 45%),
+        radial-gradient(circle at 100% 0%, rgba(199, 154, 62, 0.06), transparent 40%),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 34px),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 34px);
+}
+
+.font-display {
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+.font-mono {
+    font-family: 'IBM Plex Mono', monospace;
+}
+
+.letter-space {
+    letter-spacing: 0.14em;
+}
+
+.panel {
+    background: linear-gradient(180deg, var(--bg-panel), var(--bg-panel-2));
+    border: 1px solid var(--line);
+}
+
+.input-field {
+    background: #0F1822;
+    border: 1px solid var(--line);
+    color: var(--text-hi);
+    border-radius: 6px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.875rem;
+    width: 100%;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.input-field::placeholder {
+    color: var(--text-dim);
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(199, 154, 62, 0.15);
+}
+
+.input-field:disabled {
+    color: var(--text-dim);
+    background: #0C141C;
+    cursor: not-allowed;
+}
+
+label.field-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-mid);
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    display: block;
+}
+
+.btn-primary {
+    background: linear-gradient(180deg, var(--accent), var(--accent-soft));
+    color: #141005;
+    font-weight: 700;
+    border-radius: 6px;
+    transition: filter .15s ease, transform .1s ease;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.08);
+}
+
+.btn-primary:active {
+    transform: translateY(1px);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--teal);
+    color: var(--teal);
+    font-weight: 600;
+    border-radius: 6px;
+    transition: background .15s ease, color .15s ease;
+}
+
+.btn-outline:hover {
+    background: rgba(62, 140, 147, 0.12);
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 0 0 rgba(78, 158, 110, 0.6);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(78, 158, 110, 0.55);
+    }
+
+    70% {
+        box-shadow: 0 0 0 7px rgba(78, 158, 110, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(78, 158, 110, 0);
+    }
+}
+
+.no-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.log-card {
+    border-bottom: 1px solid var(--line-soft);
+    padding: 0.9rem 1.25rem;
+    display: grid;
+    grid-template-columns: 2.4rem 1fr;
+    gap: 0.15rem 0.85rem;
+    transition: background .15s ease;
+}
+
+.log-card:hover {
+    background: rgba(199, 154, 62, 0.04);
+}
+
+.log-card .lc-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.6rem 1rem;
+    margin-top: 0.5rem;
+}
+
+.lc-field-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+
+.lc-field-value {
+    font-size: 0.82rem;
+    color: var(--text-hi);
+}
+
+.lc-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.65rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--line-soft);
+}
+
+.btn-export {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--text-mid);
+    font-weight: 600;
+    border-radius: 6px;
+    transition: border-color .15s ease, color .15s ease;
+}
+
+.btn-export:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.scroll-thin::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+.scroll-thin::-webkit-scrollbar-track {
+    background: var(--bg-panel);
+}
+
+.scroll-thin::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 4px;
+}
+
+.brass-ring {
+    background: conic-gradient(from 180deg, var(--accent), var(--teal), var(--accent));
+}
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.status-dentro {
+    background: rgba(199, 154, 62, 0.14);
+    color: var(--accent);
+    border: 1px solid rgba(199, 154, 62, 0.35);
+}
+
+.status-fuera {
+    background: rgba(78, 158, 110, 0.12);
+    color: var(--ok);
+    border: 1px solid rgba(78, 158, 110, 0.3);
+}
+
+.multiselect {
+    position: relative;
+}
+
+.ms-trigger {
+    background: #0F1822;
+    border: 1px solid var(--line);
+    color: var(--text-hi);
+    border-radius: 6px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.875rem;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.ms-trigger:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(199, 154, 62, 0.15);
+}
+
+.ms-placeholder {
+    color: var(--text-dim);
+}
+
+.ms-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    background: #101923;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    padding: 0.5rem;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.ms-option {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.45rem 0.5rem;
+    border-radius: 5px;
+    font-size: 0.83rem;
+    cursor: pointer;
+    color: var(--text-hi);
+}
+
+.ms-option:hover {
+    background: rgba(199, 154, 62, 0.08);
+}
+
+.ms-option input {
+    accent-color: var(--accent);
+    width: 14px;
+    height: 14px;
+}
+
+.ms-add-row {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.5rem 0.4rem 0.15rem;
+    border-top: 1px solid var(--line-soft);
+    margin-top: 0.35rem;
+}
+
+.ms-add-row input {
+    flex: 1;
+    background: #0B121B;
+    border: 1px solid var(--line);
+    color: var(--text-hi);
+    border-radius: 5px;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.ms-add-row input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.ms-add-btn {
+    background: var(--accent);
+    color: #141005;
+    border-radius: 5px;
+    padding: 0 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(199, 154, 62, 0.12);
+    border: 1px solid rgba(199, 154, 62, 0.3);
+    color: var(--accent);
+    font-size: 0.72rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+}
+
+.ms-option-puesto {
+    color: var(--text-dim);
+    font-size: 0.72rem;
+}
+
+.lc-people-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-bottom: 0.15rem;
+}
+
+.lc-person {
+    font-size: 0.82rem;
+    color: var(--text-hi);
+}
+
+.lc-person-puesto {
+    color: var(--text-dim);
+    font-size: 0.74rem;
+}
+
+/* ---- notificaciones (toast) de validación ---- */
+.ui-toast {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 100;
+    max-width: 320px;
+    background: #101923;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--danger);
+    color: var(--text-hi);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+.ui-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.ui-toast-warning {
+    border-left-color: var(--accent);
+}

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPICYT · Bitácora de Acceso a Bóveda</title>
+<!-- Tailwind CSS compilado -->
+<link rel="stylesheet" href="dist/css/output.css">
+<!-- Estilos personalizados -->
+<link rel="stylesheet" href="src/css/styles.css">
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen">
+
+  <!-- ===== HEADER INSTITUCIONAL ===== -->
+  <header class="border-b border-[var(--line)] bg-[var(--bg-panel)]/90 backdrop-blur sticky top-0 z-20">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-6 flex-wrap">
+      <div class="flex items-center gap-4">
+        <img src="src/assets/logo-cns.webp" alt="CNS · Centro Nacional de Supercómputo" class="h-11 w-auto shrink-0">
+        <div>
+          <h1 class="font-display font-semibold text-[15px] leading-tight text-[var(--text-hi)]">
+            Instituto Potosino de Investigación Científica y Tecnológica
+          </h1>
+          <p class="text-[11px] font-mono text-[var(--text-mid)] letter-space mt-0.5">
+            BÓVEDA DE RESGUARDO DIGITAL · SAN LUIS POTOSÍ, MÉX.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <div class="hidden sm:flex flex-col items-end">
+          <span class="font-mono text-[11px] text-[var(--text-dim)] letter-space">FECHA / HORA</span>
+          <span id="liveClock" class="font-mono text-sm text-[var(--text-hi)]">--:--:--</span>
+        </div>
+        <div class="h-8 w-px bg-[var(--line)] hidden sm:block"></div>
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--line)] bg-[#0F1822]">
+          <span class="pulse-dot"></span>
+          <span class="font-mono text-[11px] text-[var(--ok)] letter-space">SISTEMA ACTIVO</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== TÍTULO DE SECCIÓN ===== -->
+  <div class="max-w-7xl mx-auto px-6 pt-8 pb-2">
+    <div class="flex items-end justify-between flex-wrap gap-3">
+      <div>
+        <p class="font-mono text-[11px] text-[var(--accent)] letter-space mb-1">CONTROL DE ACCESO · REGISTRO 08</p>
+        <h2 class="font-display text-2xl font-semibold text-[var(--text-hi)]">Bitácora de Acceso a Bóveda</h2>
+      </div>
+      <p class="text-xs text-[var(--text-mid)] max-w-md leading-relaxed">
+        Registra la entrada al ingresar y cierra el acceso con "Registrar salida" cuando el personal se retire de la bóveda.
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== CONTENIDO PRINCIPAL ===== -->
+  <main class="max-w-7xl mx-auto px-6 pb-16 grid grid-cols-1 lg:grid-cols-5 gap-6 mt-4">
+
+    <!-- FORMULARIO DE REGISTRO -->
+    <section class="lg:col-span-2 panel rounded-xl p-6 h-fit">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="font-display text-sm font-semibold text-[var(--text-hi)] letter-space uppercase">Registrar entrada</h3>
+        <span id="nextFolio" class="no-badge text-xs">FOLIO 001</span>
+      </div>
+
+      <form id="accessForm" class="space-y-4">
+        <div>
+          <label class="field-label">Personas que ingresan</label>
+          <div class="multiselect" id="peopleSelect">
+            <button type="button" class="ms-trigger" id="msTrigger">
+              <span id="msTriggerLabel" class="ms-placeholder">Selecciona una o varias personas</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-[var(--text-dim)] shrink-0"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="ms-panel hidden" id="msPanel">
+              <!-- Las opciones de personal se insertan dinámicamente desde personnel.js -->
+              <div class="ms-add-row flex-col items-stretch" id="msAddRow">
+                <div class="flex gap-2">
+                  <input type="text" id="msAddNombre" placeholder="Nombre" class="flex-1">
+                  <input type="text" id="msAddPuesto" placeholder="Puesto o cargo" class="flex-1">
+                </div>
+                <button type="button" class="ms-add-btn w-full mt-2" id="msAddBtn">Agregar persona</button>
+              </div>
+            </div>
+          </div>
+          <div id="msChips" class="flex flex-wrap gap-1.5 mt-2"></div>
+        </div>
+
+        <div>
+          <label class="field-label">Hora de entrada</label>
+          <input required type="time" name="horaEntrada" class="input-field font-mono">
+          <p class="text-[10px] text-[var(--text-dim)] mt-1">La hora no es correcta, Introduce la hora de entrada correcta  </p>
+        </div>
+
+        <div>
+          <label class="field-label">Motivo de acceso</label>
+          <select required name="motivo" class="input-field">
+            <option value="" disabled selected>Selecciona un motivo</option>
+            <option>Respaldo programado</option>
+            <option>Retiro de medio físico</option>
+            <option>Mantenimiento de equipo</option>
+            <option>Auditoría / verificación</option>
+            <option>Restauración de información</option>
+            <option>Otro</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-primary w-full py-2.5 mt-2 text-sm">
+          Registrar entrada
+        </button>
+
+        <p class="text-[10.5px] text-[var(--text-dim)] leading-relaxed pt-1">
+          El folio se asigna de forma automática y consecutiva. Este formulario no incluye firma; la validación se realiza mediante el registro digital sincronizado con el servidor central. Para cerrar un acceso, usa el botón "Registrar salida" en la fila correspondiente.
+        </p>
+      </form>
+    </section>
+
+    <!-- BITÁCORA / TABLA -->
+    <section class="lg:col-span-3 panel rounded-xl overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--line)] flex-wrap gap-3">
+        <h3 class="font-display text-sm font-semibold text-[var(--text-hi)] letter-space uppercase">Registros de hoy</h3>
+        <div class="flex items-center gap-3">
+          <span class="font-mono text-[11px] text-[var(--text-dim)]" id="recordCount">0 registros</span>
+          <span class="hidden sm:inline text-[10px] text-[var(--text-dim)]">· guardado en este equipo</span>
+          <button type="button" id="exportBtn" class="btn-export flex items-center gap-1.5 text-[11px] px-2.5 py-1.5">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+            Exportar JSON
+          </button>
+          <button type="button" id="clearBtn" class="btn-export flex items-center gap-1.5 text-[11px] px-2.5 py-1.5">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2m-1 0v14a1 1 0 01-1 1H8a1 1 0 01-1-1V6"/></svg>
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      <div id="logList" class="flex-1 overflow-y-auto scroll-thin" style="max-height:640px;">
+        <!-- Las tarjetas de registro se insertan dinámicamente vía JS -->
+      </div>
+
+      <div id="emptyState" class="flex-1 flex flex-col items-center justify-center py-14 text-center px-6">
+        <div class="w-10 h-10 rounded-full border border-[var(--line)] flex items-center justify-center mb-3">
+          <span class="text-[var(--accent)] font-mono text-xs">--</span>
+        </div>
+        <p class="text-xs text-[var(--text-dim)]">Aún no hay registros capturados en esta sesión.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== PIE / NOTAS LEGALES ===== -->
+  <footer class="border-t border-[var(--line)] bg-[var(--bg-panel)]/60">
+    <div class="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+      <p class="text-[11px] text-[var(--text-dim)] leading-relaxed max-w-2xl">
+        Cada registro debe completarse de forma legible y sin omisiones. La bitácora debe mantenerse bajo resguardo físico o digital por un periodo mínimo de 12 meses. Usa "Exportar JSON" para generar un respaldo local de los accesos del día; para un resguardo permanente, conecta esta plantilla a tu servidor o base de datos.
+      </p>
+      <div class="flex items-center gap-2 shrink-0">
+        <span class="w-1.5 h-1.5 rounded-full bg-[var(--teal)]"></span>
+        <span class="font-mono text-[10.5px] text-[var(--text-mid)] letter-space">IPICYT · SEGURIDAD DE LA INFORMACIÓN</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript modular -->
+  <script type="module" src="src/js/main.js"></script>
+</body>
+</html>
