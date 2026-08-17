@@ -9,16 +9,16 @@
     "build:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/css/input.css -o ./css/output.css --minify",
     "watch:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/css/input.css -o ./dist/css/output.css --watch",
     "dev": "node scripts/dev-server.js",
-    "db:migrate": "psql \"$DATABASE_URL\" -f db/schema.sql",
+    "db:migrate": "psql \"$DATABASE_URL\" -f db/schema.sql && ./js/scripts/migrate.js",
     "db:create-admin": "node scripts/create-admin.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie": "^0.6.0",
-    "jsonwebtoken": "^9.0.2",
-    "pg": "^8.11.5"
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "pg": "^8.23.0",
     "tailwindcss": "^3.4.19"
   }
 }
