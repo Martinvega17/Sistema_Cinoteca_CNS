@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Esquema de base de datos · Sistema Cinoteca CNS
--- Motor: PostgreSQL (probado localmente;  para Neon)
+-- Motor: PostgreSQL (probado localmente)
 -- ============================================================================
 -- Como aplicarlo:
 --   psql "$DATABASE_URL" -f db/schema.sql
