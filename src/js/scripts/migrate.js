@@ -3,22 +3,18 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Obtener la ruta del directorio actual
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function runMigrations() {
     console.log('🔍 Verificando conexión a la base de datos...');
 
-    // Obtén la URL de la base de datos desde las variables de entorno
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
         console.error('❌ Error: La variable de entorno DATABASE_URL no está definida.');
-        console.log('💡 Asegúrate de tener un archivo .env con DATABASE_URL o configurarlo en Vercel.');
         process.exit(1);
     }
 
-    // Lee el archivo schema.sql
     const schemaPath = path.resolve(__dirname, '../db/schema.sql');
     console.log(`📂 Leyendo esquema desde: ${schemaPath}`);
 
@@ -32,13 +28,11 @@ async function runMigrations() {
         process.exit(1);
     }
 
-    // Conéctate a la base de datos usando Neon
     const sql = neon(databaseUrl);
 
     try {
         console.log('🚀 Ejecutando migraciones...');
 
-        // Dividir el script en sentencias individuales (por si hay múltiples)
         const statements = sqlScript.split(';').filter(stmt => stmt.trim().length > 0);
         console.log(`📝 Ejecutando ${statements.length} sentencias SQL...`);
 
@@ -49,7 +43,6 @@ async function runMigrations() {
                     await sql(stmt);
                     console.log(`✅ Sentencia ${i + 1}/${statements.length} ejecutada`);
                 } catch (stmtError) {
-                    // Si es un error de "ya existe", lo ignoramos (idempotencia)
                     if (stmtError.message.includes('already exists') ||
                         stmtError.message.includes('duplicate') ||
                         stmtError.message.includes('exist')) {
@@ -64,12 +57,10 @@ async function runMigrations() {
         console.log('✅ Migraciones completadas con éxito.');
     } catch (error) {
         console.error(`❌ Error durante la migración: ${error.message}`);
-        console.error('📋 Detalles del error:', error);
         process.exit(1);
     }
 }
 
-// Ejecutar solo en producción si se desea
 if (process.env.VERCEL_ENV === 'production' || !process.env.VERCEL_ENV) {
     runMigrations();
 } else {
