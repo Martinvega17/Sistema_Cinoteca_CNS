@@ -9,10 +9,11 @@
     "build:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/css/input.css -o ./css/output.css --minify",
     "watch:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/css/input.css -o ./dist/css/output.css --watch",
     "dev": "node scripts/dev-server.js",
-    "db:migrate": "node scripts/migrate.js",
+    "db:migrate": "node ./js/scripts/create-admin.js",
     "db:create-admin": "node ./js/scripts/create-admin.js"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "bcryptjs": "^2.4.3",
     "cookie": "^0.6.0",
     "jsonwebtoken": "^9.0.2"
