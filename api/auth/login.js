@@ -1,7 +1,7 @@
 import { query } from '../_db.js';
-import { verifyPassword, createSessionCookie } from '../_auth.js';
+import { verifyPassword, createSessionCookie, withErrorHandling } from '../_auth.js';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido.' });
     return;
@@ -32,3 +32,5 @@ export default async function handler(req, res) {
     rol: user.rol
   });
 }
+
+export default withErrorHandling(handler);

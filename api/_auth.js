@@ -66,10 +66,29 @@ export function getSessionFromRequest(req) {
 }
 
 // ---------------------------------------------------------------------------
+// Manejo de errores — sin esto, cualquier excepción (p. ej. no poder
+// conectar a la base de datos) se convierte en un 500 genérico de Vercel
+// sin ningún detalle. Con esto, el frontend recibe el mensaje real y se
+// puede diagnosticar sin adivinar.
+// ---------------------------------------------------------------------------
+export function withErrorHandling(handler) {
+  return async (req, res) => {
+    try {
+      return await handler(req, res);
+    } catch (err) {
+      console.error('[api error]', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: err.message || 'Error interno del servidor.' });
+      }
+    }
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Wrappers para proteger endpoints
 // ---------------------------------------------------------------------------
 export function requireAuth(handler) {
-  return async (req, res) => {
+  return withErrorHandling(async (req, res) => {
     const session = getSessionFromRequest(req);
     if (!session) {
       res.status(401).json({ error: 'No has iniciado sesión.' });
@@ -77,7 +96,7 @@ export function requireAuth(handler) {
     }
     req.user = session;
     return handler(req, res);
-  };
+  });
 }
 
 export function requireAdmin(handler) {
