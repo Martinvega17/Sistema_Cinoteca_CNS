@@ -23,7 +23,6 @@ async function runMigrations() {
         console.log(`✅ Archivo de esquema leído (${sqlScript.length} caracteres)`);
     } catch (error) {
         console.error(`❌ Error al leer el archivo de esquema: ${error.message}`);
-        console.log('💡 Asegúrate de que el archivo db/schema.sql existe.');
         process.exit(1);
     }
 
@@ -32,7 +31,6 @@ async function runMigrations() {
     try {
         console.log('🚀 Ejecutando migraciones...');
 
-        // Dividir el script en sentencias individuales
         const statements = sqlScript.split(';').filter(stmt => stmt.trim().length > 0);
         console.log(`📝 Ejecutando ${statements.length} sentencias SQL...`);
 
@@ -40,18 +38,15 @@ async function runMigrations() {
             const stmt = statements[i].trim();
             if (stmt) {
                 try {
-                    // Usar sql.query() en lugar de sql()
                     await sql.query(stmt);
                     console.log(`✅ Sentencia ${i + 1}/${statements.length} ejecutada`);
                 } catch (stmtError) {
-                    if (stmtError.message.includes('already exists') ||
-                        stmtError.message.includes('duplicate') ||
-                        stmtError.message.includes('exist') ||
-                        stmtError.message.includes('relation') && stmtError.message.includes('already exists')) {
-                        console.log(`ℹ️ Sentencia ${i + 1}/${statements.length}: ya existía (ignorado)`);
-                    } else {
-                        throw stmtError;
-                    }
+                    // Mostrar la sentencia que falla para depurar
+                    console.error(`❌ Error en sentencia ${i + 1}:`);
+                    console.error(`📄 Sentencia problemática:`);
+                    console.error(stmt.substring(0, 200) + (stmt.length > 200 ? '...' : ''));
+                    console.error(`❌ Error: ${stmtError.message}`);
+                    throw stmtError;
                 }
             }
         }
@@ -63,7 +58,6 @@ async function runMigrations() {
     }
 }
 
-// Ejecutar solo en producción
 if (process.env.VERCEL_ENV === 'production' || !process.env.VERCEL_ENV) {
     runMigrations();
 } else {
