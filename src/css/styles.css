@@ -408,3 +408,96 @@ label.field-label {
 .ui-toast-warning {
     border-left-color: var(--accent);
 }
+
+/* ---- navegación por pestañas ---- */
+.tab-nav {
+    display: flex;
+    gap: 0.35rem;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0;
+}
+
+.tab-btn {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text-mid);
+    padding: 0.6rem 1rem;
+    border-bottom: 2px solid transparent;
+    transition: color .15s ease, border-color .15s ease;
+}
+
+.tab-btn:hover {
+    color: var(--text-hi);
+}
+
+.tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+/* ---- filas de personas dentro de una tarjeta de acceso (folio compartido) ---- */
+.lc-person-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.lc-person-row:last-child {
+    border-bottom: none;
+}
+
+.lc-person-times {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 0.1rem;
+}
+
+.lc-motivo {
+    margin-top: 0.6rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--line-soft);
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+}
+
+/* ---- tablas de datos (Registros, Personal, Admin) ---- */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table thead th {
+    font-size: 0.64rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-mid);
+    font-weight: 600;
+    text-align: left;
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+}
+
+.data-table tbody td {
+    padding: 0.6rem 0.9rem;
+    font-size: 0.8rem;
+    color: var(--text-hi);
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+}
+
+.data-table tbody tr:hover {
+    background: rgba(199, 154, 62, 0.04);
+}
+
+/* ---- pantalla de login ---- */
+#loginScreen {
+    background: var(--bg-deep);
+}

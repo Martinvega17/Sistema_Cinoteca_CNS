@@ -1,37 +1,47 @@
-import { personnelDirectory } from './personnel.js';
+import { api } from './api.js';
 
-export function initMultiselect() {
+/**
+ * A diferencia de la versión anterior, el directorio de personas ya no es
+ * un archivo estático: se carga desde GET /api/personas?activos=true.
+ * Agregar o dar de baja personas se hace ahora en la pestaña "Personal"
+ * (solo administrador), siguiendo el modelo de permisos: un usuario normal
+ * puede registrar entradas/salidas, pero no dar de alta personal nuevo.
+ */
+export async function initMultiselect() {
   const msTrigger = document.getElementById('msTrigger');
   const msTriggerLabel = document.getElementById('msTriggerLabel');
   const msPanel = document.getElementById('msPanel');
   const msChips = document.getElementById('msChips');
-  const msAddNombre = document.getElementById('msAddNombre');
-  const msAddPuesto = document.getElementById('msAddPuesto');
-  const msAddBtn = document.getElementById('msAddBtn');
-  const msAddRow = document.getElementById('msAddRow');
   const peopleSelect = document.getElementById('peopleSelect');
 
-  function buildOption(nombre, puesto) {
+  function buildOption(p) {
     const label = document.createElement('label');
     label.className = 'ms-option';
     label.innerHTML = `
-      <input type="checkbox" value="${nombre}" data-puesto="${puesto}">
-      <span>${nombre} <span class="ms-option-puesto">· ${puesto}</span></span>
+      <input type="checkbox" value="${p.id}" data-nombre="${p.nombre}" data-puesto="${p.puesto}">
+      <span>${p.nombre} <span class="ms-option-puesto">· ${p.puesto}</span></span>
     `;
     return label;
   }
 
-  // Pinta el directorio inicial de personal (ver src/js/personnel.js)
-  personnelDirectory.forEach(p => {
-    msPanel.insertBefore(buildOption(p.nombre, p.puesto), msAddRow);
-  });
+  async function loadPersonnel() {
+    msPanel.innerHTML = '<p class="text-xs text-[var(--text-dim)] p-2">Cargando personal…</p>';
+    try {
+      const personas = await api.get('/api/personas?activos=true');
+      msPanel.innerHTML = '';
+      if (personas.length === 0) {
+        msPanel.innerHTML = '<p class="text-xs text-[var(--text-dim)] p-2">No hay personal registrado todavía. Un administrador puede agregarlo en la pestaña "Personal".</p>';
+        return;
+      }
+      personas.forEach(p => msPanel.appendChild(buildOption(p)));
+    } catch (err) {
+      msPanel.innerHTML = `<p class="text-xs text-[var(--danger)] p-2">No se pudo cargar el personal: ${err.message}</p>`;
+    }
+  }
 
-  // Cada persona seleccionada trae su nombre Y su puesto ya vinculados,
-  // así no hay que capturar el puesto por separado cuando entran varias
-  // personas juntas.
   function getSelected() {
     return [...msPanel.querySelectorAll('input[type="checkbox"]:checked')]
-      .map(c => ({ nombre: c.value, puesto: c.dataset.puesto || '—' }));
+      .map(c => ({ id: c.value, nombre: c.dataset.nombre, puesto: c.dataset.puesto }));
   }
 
   function refreshSelection() {
@@ -58,30 +68,7 @@ export function initMultiselect() {
     if (e.target.type === 'checkbox') refreshSelection();
   });
 
-  function addPerson() {
-    const nombre = msAddNombre.value.trim();
-    const puesto = msAddPuesto.value.trim();
-    if (!nombre || !puesto) return;
+  await loadPersonnel();
 
-    const option = buildOption(nombre, puesto);
-    option.querySelector('input').checked = true;
-    msPanel.insertBefore(option, msAddRow);
-    refreshSelection();
-
-    msAddNombre.value = '';
-    msAddPuesto.value = '';
-    msAddNombre.focus();
-  }
-
-  msAddBtn.addEventListener('click', addPerson);
-  [msAddNombre, msAddPuesto].forEach(input => {
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addPerson();
-      }
-    });
-  });
-
-  return { refreshSelection, getSelected };
+  return { refreshSelection, getSelected, reload: loadPersonnel };
 }

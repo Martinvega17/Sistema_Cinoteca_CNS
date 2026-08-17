@@ -1,20 +1,35 @@
 import { initClock } from './clock.js';
+import { initAuth, wireLoginForm, wireLogoutButton } from './auth.js';
+import { initTabs } from './tabs.js';
 import { initMultiselect } from './multiselect.js';
 import { initRecords } from './records.js';
-import { loadFromLocalStorage } from './storage.js';
+import { initReportes } from './reportes.js';
+import { initPersonalAdmin } from './personal-admin.js';
+import { initAdminPanel } from './admin.js';
 
-// Reloj del encabezado
 initClock();
+initTabs();
+wireLogoutButton();
 
-// Selector de personas (checkboxes + agregar persona nueva)
-const multiselect = initMultiselect();
+let started = false;
 
-// Registros guardados en este equipo (localStorage)
-const { records, folio } = loadFromLocalStorage();
+async function start(session) {
+  if (started) return; // evita inicializar dos veces si hay un doble login
+  started = true;
 
-// Formulario + lista de tarjetas + exportar/limpiar
-initRecords(records, folio, multiselect);
+  const multiselect = await initMultiselect();
+  initRecords(multiselect);
+  initReportes();
 
-// Precarga la hora de entrada con la hora actual al abrir la página
-document.querySelector('input[name="horaEntrada"]').value =
-  new Date().toTimeString().slice(0, 5);
+  if (session.rol === 'administrador') {
+    initPersonalAdmin();
+    initAdminPanel();
+  }
+}
+
+const session = await initAuth();
+if (session) {
+  start(session);
+} else {
+  wireLoginForm(start);
+}

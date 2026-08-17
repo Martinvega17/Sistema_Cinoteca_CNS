@@ -1,13 +1,22 @@
 {
-  "name": "ipicyt-bitacora-boveda",
-  "version": "1.0.0",
+  "name": "sistema-cinoteca-cns",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Bitácora de acceso digital a la bóveda de resguardo del IPICYT",
+  "description": "Bitácora de acceso a la Cinoteca del CNS · IPICYT — con backend en Postgres/Neon",
   "scripts": {
+    "build": "npm run build:css",
     "build:css": "tailwindcss -i ./src/css/input.css -o ./dist/css/output.css --minify",
     "watch:css": "tailwindcss -i ./src/css/input.css -o ./dist/css/output.css --watch",
-    "serve": "npx serve . -l 5500"
+    "dev": "node scripts/dev-server.js",
+    "db:migrate": "psql \"$DATABASE_URL\" -f db/schema.sql",
+    "db:create-admin": "node scripts/create-admin.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie": "^0.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.5"
   },
   "devDependencies": {
     "tailwindcss": "^3.4.19"
