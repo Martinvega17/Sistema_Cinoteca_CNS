@@ -9,7 +9,7 @@
     "build:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/css/input.css -o ./css/output.css --minify",
     "watch:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/css/input.css -o ./dist/css/output.css --watch",
     "dev": "node scripts/dev-server.js",
-    "db:migrate": "psql \"$DATABASE_URL\" -f db/schema.sql && ./js/scripts/migrate.js",
+    "db:migrate": "node scripts/migrate.js",
     "db:create-admin": "node scripts/create-admin.js"
   },
   "dependencies": {
