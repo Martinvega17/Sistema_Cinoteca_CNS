@@ -15,7 +15,7 @@ async function runMigrations() {
         process.exit(1);
     }
 
-    const schemaPath = path.resolve(__dirname, '../db/schema.sql');
+    const schemaPath = path.resolve(__dirname, '/db/schema.sql');
     console.log(`📂 Leyendo esquema desde: ${schemaPath}`);
 
     let sqlScript;
