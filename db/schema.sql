@@ -2,13 +2,13 @@
 -- Esquema de base de datos · Sistema Cinoteca CNS
 -- Motor: PostgreSQL (probado localmente; pensado para Neon)
 -- ============================================================================
--- Cómo aplicarlo:
+-- Como aplicarlo:
 --   psql "$DATABASE_URL" -f db/schema.sql
 -- o pegando este archivo en el SQL Editor de Neon.
 -- ============================================================================
 
 -- ---------------------------------------------------------------------------
--- Función auxiliar: mantiene updated_at al día en cada UPDATE
+-- Funcion auxiliar: mantiene updated_at al dia en cada UPDATE
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
