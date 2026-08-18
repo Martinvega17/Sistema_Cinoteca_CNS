@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { isWithinMargin, isExitAfterEntry, formatHM } from './validation.js';
+import { isWithinMargin, formatHM, todayYMD } from './validation.js';
 import { showToast } from './ui.js';
 
 const ENTRY_MARGIN_MINUTES = 3;
@@ -19,7 +19,12 @@ export function initRecords(multiselect) {
   }
 
   function todayStr() {
-    return new Date().toISOString().slice(0, 10);
+    // OJO: no usar `new Date().toISOString()` — eso siempre da la fecha en
+    // UTC, y cerca de la medianoche en México (UTC-6) ya es "mañana" en
+    // UTC, por lo que los registros de la tarde/noche se veían con la
+    // fecha equivocada. `todayYMD` calcula la fecha explícitamente en hora
+    // de México.
+    return todayYMD();
   }
 
   // Cada persona que entra es un renglón independiente en la BD (accesos),

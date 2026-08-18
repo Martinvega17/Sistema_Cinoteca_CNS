@@ -437,6 +437,70 @@ label.field-label {
     border-bottom-color: var(--accent);
 }
 
+/* ---- pestañas de año / mes en "Registros" ---- */
+.year-tab {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text-mid);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.year-tab:hover {
+    color: var(--text-hi);
+    border-color: var(--teal);
+}
+
+.year-tab.active {
+    color: #141005;
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.month-tab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    color: var(--text-mid);
+    background: var(--bg-panel-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.32rem 0.7rem;
+    transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.month-tab:hover {
+    color: var(--text-hi);
+    border-color: var(--teal);
+}
+
+.month-tab.active {
+    color: var(--teal);
+    border-color: var(--teal);
+    background: rgba(62, 140, 147, 0.14);
+}
+
+/* ---- filas en edición inline (personal / usuarios en Admin) ---- */
+.inline-edit-input {
+    background: var(--bg-panel-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--text-hi);
+    font-size: 12px;
+    padding: 0.3rem 0.5rem;
+    width: 100%;
+}
+
+.inline-edit-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
 /* ---- filas de personas dentro de una tarjeta de acceso (folio compartido) ---- */
 .lc-person-row {
     display: flex;
