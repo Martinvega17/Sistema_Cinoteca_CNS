@@ -104,7 +104,7 @@ export function initReportes() {
 
   async function cargarMeses() {
     try {
-      const data = await api.get('/api/accesos/meses');
+      const data = await api.get('/api/accesos?resumen=meses');
       mesesPorAnio = data.anios || {};
     } catch {
       mesesPorAnio = {}; // las pestañas son un extra; si falla, el buscador manual sigue funcionando
