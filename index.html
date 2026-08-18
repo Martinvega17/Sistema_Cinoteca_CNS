@@ -6,7 +6,7 @@
 <title>IPICYT · Bitácora de Acceso a Cintoteca</title>
 <link rel="icon" href="src/assets/logo-cns.ico">
 <!-- Tailwind CSS compilado -->
-<link rel="stylesheet" href="src/css/output.css">
+<link rel="stylesheet" href="css/output.css">
 <!-- Estilos personalizados -->
 <link rel="stylesheet" href="src/css/styles.css">
 <!-- Google Fonts -->
@@ -182,6 +182,13 @@
 
       <!-- ---------- PESTAÑA: REGISTROS (histórico) ---------- -->
       <section id="tabPanel-registros" class="tab-panel hidden">
+        <section class="panel rounded-xl p-5 mb-6">
+          <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <div class="flex items-center gap-2 flex-wrap" id="reportesAnioTabs"></div>
+          </div>
+          <div class="flex items-center gap-1.5 flex-wrap" id="reportesMesTabs"></div>
+        </section>
+
         <section class="panel rounded-xl p-6 mb-6">
           <form id="reportesForm" class="grid grid-cols-1 sm:grid-cols-5 gap-4 items-end">
             <div>
