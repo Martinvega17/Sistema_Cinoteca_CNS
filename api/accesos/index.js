@@ -84,6 +84,18 @@ async function handleDelete(req, res) {
     return;
   }
 
+  const borrarTodo = req.query.todo === 'true';
+
+  if (borrarTodo) {
+    const { rowCount } = await query('DELETE FROM accesos');
+    await query("ALTER SEQUENCE folio_seq RESTART WITH 1");
+
+    await logAudit(req.user.sub, 'accesos.borrar_todo', 'accesos:*', { eliminados: rowCount });
+
+    res.status(200).json({ eliminados: rowCount, todo: true });
+    return;
+  }
+
   const fecha = todayYMD();
   const { rowCount } = await query('DELETE FROM accesos WHERE fecha = $1', [fecha]);
   await query("ALTER SEQUENCE folio_seq RESTART WITH 1");

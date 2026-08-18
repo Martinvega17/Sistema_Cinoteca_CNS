@@ -1,11 +1,12 @@
 import { api } from './api.js';
 import { showToast } from './ui.js';
 
-export function initAdminPanel({ onLimpiarHoy } = {}) {
+export function initAdminPanel({ onLimpiarHoy, onBorrarTodo } = {}) {
   const usuariosForm = document.getElementById('usuariosForm');
   const usuariosBody = document.getElementById('usuariosBody');
   const auditoriaBody = document.getElementById('auditoriaBody');
   const limpiarHoyBtn = document.getElementById('limpiarHoyBtn');
+  const borrarTodoBtn = document.getElementById('borrarTodoBtn');
 
   let usuariosCache = [];
   let editandoId = null;
@@ -172,6 +173,38 @@ export function initAdminPanel({ onLimpiarHoy } = {}) {
       showToast(err.message);
     } finally {
       limpiarHoyBtn.disabled = false;
+    }
+  });
+
+  // Doble confirmación (confirm + escribir "BORRAR") porque esto borra
+  // TODO el historial de accesos, de cualquier fecha — no solo el de hoy.
+  borrarTodoBtn.addEventListener('click', async () => {
+    const primeraConfirmacion = window.confirm(
+      'Esto va a borrar TODO el historial de accesos (de cualquier fecha, no solo hoy) y reiniciar el folio a 001. No se puede deshacer. ¿Continuar?'
+    );
+    if (!primeraConfirmacion) return;
+
+    const texto = window.prompt('Para confirmar, escribe BORRAR en mayúsculas:');
+    if (texto !== 'BORRAR') {
+      showToast('Cancelado: no escribiste "BORRAR" tal cual.');
+      return;
+    }
+
+    borrarTodoBtn.disabled = true;
+    try {
+      const resultado = await api.delete('/api/accesos?todo=true');
+      showToast(
+        resultado.eliminados
+          ? `${resultado.eliminados} registro(s) eliminados de TODO el historial. Folio reiniciado a 001.`
+          : 'No había registros que eliminar. Folio reiniciado a 001.',
+        'warning'
+      );
+      cargarAuditoria();
+      if (onBorrarTodo) onBorrarTodo();
+    } catch (err) {
+      showToast(err.message);
+    } finally {
+      borrarTodoBtn.disabled = false;
     }
   });
 

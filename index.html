@@ -329,7 +329,16 @@
                 Elimina todos los accesos capturados hoy y reinicia el folio a 001. Es permanente y no se puede deshacer — úsalo solo para limpiar registros de prueba.
               </p>
             </div>
-            <button type="button" id="limpiarHoyBtn" class="btn-danger-outline text-[11px] px-3 py-1.5 shrink-0">Limpiar registros de hoy</button>
+           <button type="button" id="limpiarHoyBtn" class="btn-danger-outline text-[11px] px-3 py-1.5 shrink-0">Limpiar registros de hoy</button>
+          </div>
+          <div class="flex items-center justify-between flex-wrap gap-4 mt-5 pt-5 border-t border-[var(--line)]">
+            <div>
+              <h3 class="font-display text-sm font-semibold text-[var(--danger)] letter-space uppercase">Borrar TODO el historial</h3>
+              <p class="text-[10.5px] text-[var(--text-dim)] mt-1 max-w-md leading-relaxed">
+                Elimina TODOS los accesos de la base de datos, de cualquier fecha (no solo hoy), y reinicia el folio a 001. Es permanente y no se puede deshacer — úsalo solo mientras haces pruebas.
+              </p>
+            </div>
+            <button type="button" id="borrarTodoBtn" class="btn-danger-outline text-[11px] px-3 py-1.5 shrink-0">Borrar TODO el historial</button>
           </div>
         </section>
 
