@@ -4,7 +4,19 @@ import * as cookie from 'cookie';
 import { query } from './_db.js';
 
 const COOKIE_NAME = 'cinoteca_session';
-const SESSION_HOURS = 8;
+
+// Las cuentas de rol "administrador" siguen cerrando sesión sola a las 8h.
+// Las cuentas de rol "usuario" son las que se dejan abiertas todo el día en
+// la recepción/cintoteca — para esas no queremos que la sesión expire sola;
+// se usan ~5 años como "sin límite" (un JWT no puede no tener `exp`, pero
+// para efectos prácticos esto no vence nunca salvo que se cierre sesión a
+// mano con el botón "Salir").
+const SESSION_SECONDS_ADMIN = 8 * 60 * 60;
+const SESSION_SECONDS_USUARIO = 60 * 60 * 24 * 365 * 5;
+
+function sessionSeconds(rol) {
+  return rol === 'administrador' ? SESSION_SECONDS_ADMIN : SESSION_SECONDS_USUARIO;
+}
 
 function getSecret() {
   if (!process.env.JWT_SECRET) {
@@ -29,17 +41,18 @@ export async function verifyPassword(plain, hash) {
 // en JS, así que records.js/etc. solo necesitan mandar `credentials:'include'`)
 // ---------------------------------------------------------------------------
 export function createSessionCookie(usuario) {
+  const seconds = sessionSeconds(usuario.rol);
   const token = jwt.sign(
     { sub: usuario.id, usuario: usuario.usuario, rol: usuario.rol },
     getSecret(),
-    { expiresIn: `${SESSION_HOURS}h` }
+    { expiresIn: seconds }
   );
   return cookie.serialize(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: SESSION_HOURS * 60 * 60
+    maxAge: seconds
   });
 }
 

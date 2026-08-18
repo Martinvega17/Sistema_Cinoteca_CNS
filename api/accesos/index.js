@@ -1,6 +1,6 @@
 import { query } from '../_db.js';
 import { requireAuth, logAudit } from '../_auth.js';
-import { isWithinMargin } from '../../src/js/validation.js';
+import { isWithinMargin, todayYMD } from '../../src/js/validation.js';
 
 const ENTRY_MARGIN_MINUTES = 3;
 
@@ -52,13 +52,20 @@ async function handlePost(req, res) {
   const { rows: folioRows } = await query("SELECT nextval('folio_seq') AS n");
   const folioGrupo = pad(folioRows[0].n);
 
+  // Se manda `fecha` explícita (calculada en hora de México) en vez de
+  // dejar que la columna use su DEFAULT CURRENT_DATE: ese default depende
+  // de la zona horaria de la sesión de Postgres (Neon usa UTC), lo que
+  // podía registrar el acceso con la fecha del día siguiente cerca de la
+  // medianoche en México.
+  const fecha = todayYMD();
+
   const inserted = [];
   for (const personaId of personas) {
     const { rows } = await query(
-      `INSERT INTO accesos (folio_grupo, persona_id, hora_entrada, motivo, registrado_por)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO accesos (folio_grupo, persona_id, fecha, hora_entrada, motivo, registrado_por)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id`,
-      [folioGrupo, personaId, horaEntrada, motivo, req.user.sub]
+      [folioGrupo, personaId, fecha, horaEntrada, motivo, req.user.sub]
     );
     inserted.push(rows[0]);
   }
@@ -68,9 +75,28 @@ async function handlePost(req, res) {
   res.status(201).json({ folio_grupo: folioGrupo, registros: inserted });
 }
 
+// Borra TODOS los accesos de hoy y reinicia el folio a 001. Es para poder
+// limpiar registros de prueba sin dejar basura en la base de datos — no
+// borra nada de días anteriores. Solo administrador.
+async function handleDelete(req, res) {
+  if (req.user.rol !== 'administrador') {
+    res.status(403).json({ error: 'Esta acción requiere rol de administrador.' });
+    return;
+  }
+
+  const fecha = todayYMD();
+  const { rowCount } = await query('DELETE FROM accesos WHERE fecha = $1', [fecha]);
+  await query("ALTER SEQUENCE folio_seq RESTART WITH 1");
+
+  await logAudit(req.user.sub, 'accesos.limpiar_hoy', `fecha:${fecha}`, { eliminados: rowCount });
+
+  res.status(200).json({ eliminados: rowCount, fecha });
+}
+
 async function handler(req, res) {
   if (req.method === 'GET') return handleGet(req, res);
   if (req.method === 'POST') return handlePost(req, res);
+  if (req.method === 'DELETE') return handleDelete(req, res);
   res.status(405).json({ error: 'Método no permitido.' });
 }
 

@@ -33,7 +33,7 @@ async function handler(req, res) {
            ELSE fecha_baja
          END
      WHERE id = $5
-     RETURNING id, nombre, area, puesto, activo, fecha_alta, fecha_baja`,
+     RETURNING id, nombre, area, puesto, activo, fecha_alta, fecha_baja, es_visita`,
     [nombre ?? actual.nombre, area ?? actual.area, puesto ?? actual.puesto, nuevoActivo, id]
   );
 

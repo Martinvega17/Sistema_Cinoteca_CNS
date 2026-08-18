@@ -18,12 +18,17 @@ async function start(session) {
   started = true;
 
   const multiselect = await initMultiselect();
-  initRecords(multiselect);
-  initReportes();
+  const records = initRecords(multiselect);
+  const reportes = initReportes();
 
   if (session.rol === 'administrador') {
     initPersonalAdmin();
-    initAdminPanel();
+    initAdminPanel({
+      onLimpiarHoy: () => {
+        records.loadToday();
+        reportes.buscar();
+      }
+    });
   }
 }
 

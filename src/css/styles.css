@@ -116,6 +116,28 @@ label.field-label {
     background: rgba(62, 140, 147, 0.12);
 }
 
+.btn-danger-outline {
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: background .15s ease;
+}
+
+.btn-danger-outline:hover {
+    background: rgba(181, 83, 60, 0.14);
+}
+
+.visita-badge {
+    color: var(--text-dim);
+    font-size: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
 .pulse-dot {
     width: 8px;
     height: 8px;

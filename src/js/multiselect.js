@@ -1,11 +1,13 @@
 import { api } from './api.js';
+import { showToast } from './ui.js';
 
 /**
- * A diferencia de la versión anterior, el directorio de personas ya no es
- * un archivo estático: se carga desde GET /api/personas?activos=true.
- * Agregar o dar de baja personas se hace ahora en la pestaña "Personal"
- * (solo administrador), siguiendo el modelo de permisos: un usuario normal
- * puede registrar entradas/salidas, pero no dar de alta personal nuevo.
+ * El directorio de personas se carga desde GET /api/personas?activos=true.
+ * Agregar personal FIJO se hace en la pestaña "Personal" (solo
+ * administrador). Pero cualquier usuario puede dar de alta una VISITA
+ * ocasional (alguien que no es del área) directamente desde aquí, con el
+ * mini-formulario "+ Agregar persona nueva" al fondo de la lista — el
+ * backend la marca automáticamente como `es_visita`.
  */
 export async function initMultiselect() {
   const msTrigger = document.getElementById('msTrigger');
@@ -19,9 +21,20 @@ export async function initMultiselect() {
     label.className = 'ms-option';
     label.innerHTML = `
       <input type="checkbox" value="${p.id}" data-nombre="${p.nombre}" data-puesto="${p.puesto}">
-      <span>${p.nombre} <span class="ms-option-puesto">· ${p.puesto}</span></span>
+      <span>${p.nombre} <span class="ms-option-puesto">· ${p.puesto}</span>${p.es_visita ? ' <span class="visita-badge">Visita</span>' : ''}</span>
     `;
     return label;
+  }
+
+  function buildAddNewRow() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ms-add-row';
+    wrapper.innerHTML = `
+      <input type="text" id="msNuevoNombre" placeholder="Nombre completo de la visita">
+      <input type="text" id="msNuevoPuesto" placeholder="Motivo / procedencia (opcional)">
+      <button type="button" class="ms-add-btn" id="msNuevoGuardar">+ Agregar</button>
+    `;
+    return wrapper;
   }
 
   async function loadPersonnel() {
@@ -30,13 +43,58 @@ export async function initMultiselect() {
       const personas = await api.get('/api/personas?activos=true');
       msPanel.innerHTML = '';
       if (personas.length === 0) {
-        msPanel.innerHTML = '<p class="text-xs text-[var(--text-dim)] p-2">No hay personal registrado todavía. Un administrador puede agregarlo en la pestaña "Personal".</p>';
-        return;
+        msPanel.innerHTML = '<p class="text-xs text-[var(--text-dim)] p-2">No hay personal registrado todavía. Agrega una persona abajo, o pide a un administrador que dé de alta al personal fijo en la pestaña "Personal".</p>';
+      } else {
+        personas.forEach(p => msPanel.appendChild(buildOption(p)));
       }
-      personas.forEach(p => msPanel.appendChild(buildOption(p)));
+      msPanel.appendChild(buildAddNewRow());
+      wireAddNewRow();
     } catch (err) {
       msPanel.innerHTML = `<p class="text-xs text-[var(--danger)] p-2">No se pudo cargar el personal: ${err.message}</p>`;
     }
+  }
+
+  function wireAddNewRow() {
+    const nombreInput = document.getElementById('msNuevoNombre');
+    const puestoInput = document.getElementById('msNuevoPuesto');
+    const guardarBtn = document.getElementById('msNuevoGuardar');
+
+    async function agregar() {
+      const nombre = nombreInput.value.trim();
+      const puesto = puestoInput.value.trim();
+      if (!nombre) {
+        nombreInput.focus();
+        showToast('Escribe el nombre de la persona.');
+        return;
+      }
+
+      guardarBtn.disabled = true;
+      try {
+        const nueva = await api.post('/api/personas', { nombre, puesto: puesto || undefined });
+        await loadPersonnel(); // vuelve a pintar la lista con la nueva persona incluida
+
+        // Selecciona automáticamente a la persona recién agregada.
+        const nuevoCheckbox = msPanel.querySelector(`input[type="checkbox"][value="${nueva.id}"]`);
+        if (nuevoCheckbox) {
+          nuevoCheckbox.checked = true;
+          refreshSelection();
+        }
+        showToast(`${nueva.nombre} agregada y seleccionada.`, 'warning');
+      } catch (err) {
+        showToast(err.message);
+      } finally {
+        guardarBtn.disabled = false;
+      }
+    }
+
+    guardarBtn.addEventListener('click', agregar);
+    [nombreInput, puestoInput].forEach(input => {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); agregar(); }
+      });
+      // Evita que un clic dentro del formulario cierre el panel del multiselect.
+      input.addEventListener('click', (e) => e.stopPropagation());
+    });
   }
 
   function getSelected() {

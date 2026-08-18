@@ -1,10 +1,11 @@
 import { api } from './api.js';
 import { showToast } from './ui.js';
 
-export function initAdminPanel() {
+export function initAdminPanel({ onLimpiarHoy } = {}) {
   const usuariosForm = document.getElementById('usuariosForm');
   const usuariosBody = document.getElementById('usuariosBody');
   const auditoriaBody = document.getElementById('auditoriaBody');
+  const limpiarHoyBtn = document.getElementById('limpiarHoyBtn');
 
   let usuariosCache = [];
   let editandoId = null;
@@ -147,6 +148,30 @@ export function initAdminPanel() {
       } catch (err) {
         showToast(err.message);
       }
+    }
+  });
+
+  limpiarHoyBtn.addEventListener('click', async () => {
+    const confirmado = window.confirm(
+      'Esto va a borrar TODOS los registros de hoy y reiniciar el folio a 001. No se puede deshacer. ¿Continuar?'
+    );
+    if (!confirmado) return;
+
+    limpiarHoyBtn.disabled = true;
+    try {
+      const resultado = await api.delete('/api/accesos');
+      showToast(
+        resultado.eliminados
+          ? `${resultado.eliminados} registro(s) de hoy eliminados. Folio reiniciado a 001.`
+          : 'No había registros de hoy que eliminar. Folio reiniciado a 001.',
+        'warning'
+      );
+      cargarAuditoria();
+      if (onLimpiarHoy) onLimpiarHoy();
+    } catch (err) {
+      showToast(err.message);
+    } finally {
+      limpiarHoyBtn.disabled = false;
     }
   });
 

@@ -33,7 +33,7 @@ export function initPersonalAdmin() {
     }
 
     tr.innerHTML = `
-      <td>${p.nombre}</td>
+      <td>${p.nombre}${p.es_visita ? ' <span class="visita-badge">Visita</span>' : ''}</td>
       <td>${p.area || '—'}</td>
       <td>${p.puesto}</td>
       <td>${p.activo

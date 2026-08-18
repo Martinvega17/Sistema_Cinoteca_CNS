@@ -36,6 +36,11 @@ CREATE TABLE IF NOT EXISTS personas (
 CREATE INDEX IF NOT EXISTS idx_personas_activo ON personas (activo);
 CREATE INDEX IF NOT EXISTS idx_personas_nombre ON personas (nombre);
 
+-- Marca a las personas dadas de alta rápidamente desde "Personas que
+-- ingresan" (visitas ocasionales que no son personal fijo del área),
+-- a diferencia de las que un administrador da de alta desde "Personal".
+ALTER TABLE personas ADD COLUMN IF NOT EXISTS es_visita BOOLEAN NOT NULL DEFAULT false;
+
 DROP TRIGGER IF EXISTS trg_personas_updated_at ON personas;
 CREATE TRIGGER trg_personas_updated_at
   BEFORE UPDATE ON personas
