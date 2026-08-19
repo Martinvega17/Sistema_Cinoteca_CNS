@@ -22,6 +22,7 @@ async function start(session) {
   const reportes = initReportes();
 
   if (session.rol === 'administrador') {
+    initPersonalAdmin();
     initAdminPanel({
       onLimpiarHoy: () => {
         records.loadToday();
