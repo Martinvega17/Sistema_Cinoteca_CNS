@@ -1,6 +1,6 @@
 import { query } from '../../_db.js';
 import { requireAuth, logAudit } from '../../_auth.js';
-import { isExitAfterEntry, formatHM } from '../../../src/js/validation.js';
+import { isExitAfterEntry, formatHM } from '../../../src/js/core/validation.js';
 
 async function handler(req, res) {
   if (req.method !== 'PATCH') {

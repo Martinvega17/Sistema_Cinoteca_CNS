@@ -1,6 +1,6 @@
-import { api } from './api.js';
-import { showToast } from './ui.js';
-import { todayYMD } from './validation.js';
+import { api } from '../core/api.js';
+import { showToast } from '../core/ui.js';
+import { todayYMD } from '../core/validation.js';
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',

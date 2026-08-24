@@ -1,6 +1,6 @@
 import { query } from '../_db.js';
 import { requireAuth, logAudit } from '../_auth.js';
-import { isWithinMargin, todayYMD } from '../../src/js/validation.js';
+import { isWithinMargin, todayYMD } from '../../src/js/core/validation.js';
 
 const ENTRY_MARGIN_MINUTES = 3;
 

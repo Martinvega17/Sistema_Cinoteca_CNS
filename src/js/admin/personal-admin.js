@@ -1,5 +1,5 @@
-import { api } from './api.js';
-import { showToast } from './ui.js';
+import { api } from '../core/api.js';
+import { showToast } from '../core/ui.js';
 
 export function initPersonalAdmin() {
   const form = document.getElementById('personalForm');

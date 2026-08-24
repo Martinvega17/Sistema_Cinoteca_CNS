@@ -1,6 +1,6 @@
-import { api } from './api.js';
-import { isWithinMargin, formatHM, todayYMD } from './validation.js';
-import { showToast } from './ui.js';
+import { api } from '../core/api.js';
+import { isWithinMargin, formatHM, todayYMD } from '../core/validation.js';
+import { showToast } from '../core/ui.js';
 
 const ENTRY_MARGIN_MINUTES = 3;
 
