@@ -20,9 +20,12 @@ async function handleGet(req, res) {
 
   const { rows } = await query(
     `SELECT a.id, a.folio_grupo, a.fecha, a.hora_entrada, a.hora_salida, a.motivo,
-            p.id AS persona_id, p.nombre, p.puesto
+            a.persona_id,
+            COALESCE(p.nombre, a.visita_nombre) AS nombre,
+            COALESCE(p.puesto, a.visita_puesto, 'Visita') AS puesto,
+            (a.persona_id IS NULL) AS es_visita_suelta
      FROM accesos a
-     JOIN personas p ON p.id = a.persona_id
+     LEFT JOIN personas p ON p.id = a.persona_id
      ${where}
      ORDER BY a.fecha DESC, a.hora_entrada DESC, a.id DESC
      LIMIT 500`,
@@ -32,10 +35,20 @@ async function handleGet(req, res) {
 }
 
 async function handlePost(req, res) {
-  const { personas, horaEntrada, motivo } = req.body || {};
+  const { personas, visitas, horaEntrada, motivo } = req.body || {};
 
-  if (!Array.isArray(personas) || personas.length === 0) {
-    res.status(400).json({ error: 'Selecciona al menos una persona que ingresa.' });
+  const listaPersonas = Array.isArray(personas) ? personas : [];
+  // `visitas`: personas externas/ocasionales capturadas al vuelo, que NO se
+  // guardan en el directorio `personas` — solo su nombre queda en el propio
+  // renglón de `accesos` (ver visita_nombre/visita_puesto en el schema).
+  const listaVisitas = Array.isArray(visitas)
+    ? visitas
+        .map(v => ({ nombre: (v?.nombre || '').trim(), puesto: (v?.puesto || '').trim() }))
+        .filter(v => v.nombre)
+    : [];
+
+  if (listaPersonas.length === 0 && listaVisitas.length === 0) {
+    res.status(400).json({ error: 'Selecciona o agrega al menos una persona que ingresa.' });
     return;
   }
   if (!motivo) {
@@ -60,17 +73,32 @@ async function handlePost(req, res) {
   const fecha = todayYMD();
 
   const inserted = [];
-  for (const personaId of personas) {
+  for (const personaId of listaPersonas) {
     const { rows } = await query(
       `INSERT INTO accesos (folio_grupo, persona_id, fecha, hora_entrada, motivo, registrado_por)
        VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id`,
+       RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, visita_nombre, visita_puesto`,
       [folioGrupo, personaId, fecha, horaEntrada, motivo, req.user.sub]
     );
     inserted.push(rows[0]);
   }
 
-  await logAudit(req.user.sub, 'accesos.entrada', `folio:${folioGrupo}`, { personas, horaEntrada, motivo });
+  for (const visita of listaVisitas) {
+    const { rows } = await query(
+      `INSERT INTO accesos (folio_grupo, persona_id, visita_nombre, visita_puesto, fecha, hora_entrada, motivo, registrado_por)
+       VALUES ($1, NULL, $2, $3, $4, $5, $6, $7)
+       RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, visita_nombre, visita_puesto`,
+      [folioGrupo, visita.nombre, visita.puesto || null, fecha, horaEntrada, motivo, req.user.sub]
+    );
+    inserted.push(rows[0]);
+  }
+
+  await logAudit(req.user.sub, 'accesos.entrada', `folio:${folioGrupo}`, {
+    personas: listaPersonas,
+    visitas: listaVisitas,
+    horaEntrada,
+    motivo
+  });
 
   res.status(201).json({ folio_grupo: folioGrupo, registros: inserted });
 }

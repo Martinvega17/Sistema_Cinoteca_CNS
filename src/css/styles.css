@@ -379,6 +379,20 @@ label.field-label {
     border-radius: 999px;
 }
 
+.chip-remove {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.chip-remove:hover {
+    opacity: 1;
+}
+
 .ms-option-puesto {
     color: var(--text-dim);
     font-size: 0.72rem;

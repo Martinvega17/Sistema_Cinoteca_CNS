@@ -2,6 +2,7 @@ import { initClock } from './core/clock.js';
 import { initAuth, wireLoginForm, wireLogoutButton } from './core/auth.js';
 import { initTabs } from './core/tabs.js';
 import { initMultiselect } from './user/multiselect.js';
+import { initQuickVisits } from './user/quickvisits.js';
 import { initRecords } from './user/records.js';
 import { initReportes } from './user/reportes.js';
 import { initPersonalAdmin } from './admin/personal-admin.js';
@@ -18,7 +19,8 @@ async function start(session) {
   started = true;
 
   const multiselect = await initMultiselect();
-  const records = initRecords(multiselect);
+  const quickVisits = initQuickVisits();
+  const records = initRecords(multiselect, quickVisits);
   const reportes = initReportes();
 
   if (session.rol === 'administrador') {

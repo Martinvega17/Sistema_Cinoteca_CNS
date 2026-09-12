@@ -10,7 +10,7 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -81,7 +81,8 @@ async function handleApi(req, res, pathname, searchParams) {
     match.params.forEach((name, i) => { query[name] = groups[i + 1]; });
   }
 
-  const mod = await import(path.join(ROOT, match.file) + `?t=${Date.now()}`);
+  const fileUrl = pathToFileURL(path.join(ROOT, match.file)).href;
+  const mod = await import(fileUrl + `?t=${Date.now()}`);
   const handler = mod.default;
 
   const fakeReq = { method: req.method, headers: req.headers, query, body: await readBody(req) };

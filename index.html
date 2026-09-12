@@ -123,7 +123,17 @@
                 </div>
               </div>
               <div id="msChips" class="flex flex-wrap gap-1.5 mt-2"></div>
-              <p class="text-[10px] text-[var(--text-dim)] mt-1">¿Es una visita que no aparece en la lista? Agrégala directamente al final del selector.</p>
+            </div>
+
+            <div>
+              <label class="field-label">Visita o personal externo (opcional)</label>
+              <div class="ms-add-row">
+                <input type="text" id="qvNombre" placeholder="Nombre completo de la visita">
+                <input type="text" id="qvPuesto" placeholder="Motivo / procedencia (opcional)">
+              </div>
+              <button type="button" class="btn-primary w-full py-2.5 mt-2 text-sm" id="qvAddBtn">+ Agregar</button>
+              <div id="qvChips" class="flex flex-wrap gap-1.5 mt-2"></div>
+              <p class="text-[10px] text-[var(--text-dim)] mt-1">Para alguien que entra una sola vez. Queda en la bitácora de accesos, pero NO se guarda en el directorio de personal.</p>
             </div>
 
             <div>

@@ -59,7 +59,7 @@ CREATE SEQUENCE IF NOT EXISTS folio_seq START 1;
 CREATE TABLE IF NOT EXISTS accesos (
   id            SERIAL PRIMARY KEY,
   folio_grupo   TEXT NOT NULL,             -- agrupa a quienes entraron juntos
-  persona_id    INTEGER NOT NULL REFERENCES personas(id),
+  persona_id    INTEGER REFERENCES personas(id),
   fecha         DATE NOT NULL DEFAULT CURRENT_DATE,
   hora_entrada  TIME NOT NULL,
   hora_salida   TIME,
@@ -68,6 +68,20 @@ CREATE TABLE IF NOT EXISTS accesos (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- `persona_id` puede quedar NULL cuando el acceso es de una visita/personal
+-- externo capturado al vuelo (ver visita_nombre/visita_puesto abajo): esa
+-- persona NO se da de alta en el directorio `personas`, solo queda su
+-- nombre "congelado" en el propio renglón de accesos.
+ALTER TABLE accesos ALTER COLUMN persona_id DROP NOT NULL;
+ALTER TABLE accesos ADD COLUMN IF NOT EXISTS visita_nombre TEXT;
+ALTER TABLE accesos ADD COLUMN IF NOT EXISTS visita_puesto TEXT;
+
+-- Todo renglón de acceso debe tener SIEMPRE a alguien identificado: o bien
+-- un persona_id del directorio, o bien un visita_nombre capturado a mano.
+ALTER TABLE accesos DROP CONSTRAINT IF EXISTS chk_accesos_alguien;
+ALTER TABLE accesos ADD CONSTRAINT chk_accesos_alguien
+  CHECK (persona_id IS NOT NULL OR visita_nombre IS NOT NULL);
 
 CREATE INDEX IF NOT EXISTS idx_accesos_fecha ON accesos (fecha);
 CREATE INDEX IF NOT EXISTS idx_accesos_persona ON accesos (persona_id);

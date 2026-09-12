@@ -4,7 +4,7 @@ import { showToast } from '../core/ui.js';
 
 const ENTRY_MARGIN_MINUTES = 3;
 
-export function initRecords(multiselect) {
+export function initRecords(multiselect, quickVisits) {
   const form = document.getElementById('accessForm');
   const logList = document.getElementById('logList');
   const emptyState = document.getElementById('emptyState');
@@ -100,9 +100,10 @@ export function initRecords(multiselect) {
     e.preventDefault();
 
     const personas = multiselect.getSelected();
-    if (personas.length === 0) {
+    const visitas = quickVisits.getVisitas();
+    if (personas.length === 0 && visitas.length === 0) {
       flashError(msTrigger);
-      showToast('Selecciona al menos una persona que ingresa.');
+      showToast('Selecciona o agrega al menos una persona que ingresa.');
       return;
     }
 
@@ -121,13 +122,19 @@ export function initRecords(multiselect) {
     try {
       const resultado = await api.post('/api/accesos', {
         personas: personas.map(p => Number(p.id)),
+        visitas,
         horaEntrada,
         motivo: formData.motivo
       });
 
       const rows = resultado.registros.map(r => {
-        const persona = personas.find(p => Number(p.id) === r.persona_id);
-        return { ...r, nombre: persona?.nombre, puesto: persona?.puesto };
+        if (r.persona_id) {
+          const persona = personas.find(p => Number(p.id) === r.persona_id);
+          return { ...r, nombre: persona?.nombre, puesto: persona?.puesto };
+        }
+        // Visita suelta: el propio backend regresa el nombre/puesto que se
+        // guardó en el renglón de accesos (nunca en la tabla personas).
+        return { ...r, nombre: r.visita_nombre, puesto: r.visita_puesto || 'Visita' };
       });
       logList.prepend(renderGroupCard({ folio_grupo: resultado.folio_grupo, motivo: formData.motivo, personas: rows }));
       updateCount();
@@ -136,6 +143,7 @@ export function initRecords(multiselect) {
       form.reset();
       document.querySelectorAll('#msPanel input[type="checkbox"]').forEach(c => c.checked = false);
       multiselect.refreshSelection();
+      quickVisits.reset();
       horaEntradaInput.value = new Date().toTimeString().slice(0, 5);
     } catch (err) {
       showToast(err.message);

@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import * as cookie from 'cookie';
+import { parseCookie, stringifySetCookie } from 'cookie';
 import { query } from './_db.js';
 
 const COOKIE_NAME = 'cinoteca_session';
@@ -47,28 +47,32 @@ export function createSessionCookie(usuario) {
     getSecret(),
     { expiresIn: seconds }
   );
-  return cookie.serialize(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: seconds
-  });
+return stringifySetCookie({
+  name: COOKIE_NAME,
+  value: token,
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  path: '/',
+  maxAge: seconds
+});
 }
 
 export function clearSessionCookie() {
-  return cookie.serialize(COOKIE_NAME, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0
-  });
+  return stringifySetCookie({
+  name: COOKIE_NAME,
+  value: '',
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  path: '/',
+  maxAge: 0
+});
 }
 
 export function getSessionFromRequest(req) {
   const header = req.headers.cookie || '';
-  const parsed = cookie.parse(header);
+  const parsed = parseCookie(header);
   const token = parsed[COOKIE_NAME];
   if (!token) return null;
   try {

@@ -25,8 +25,11 @@ async function handler(req, res) {
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
   const { rows } = await query(
-    `SELECT a.folio_grupo, p.nombre, p.puesto, a.fecha, a.hora_entrada, a.hora_salida, a.motivo
-     FROM accesos a JOIN personas p ON p.id = a.persona_id
+    `SELECT a.folio_grupo,
+            COALESCE(p.nombre, a.visita_nombre) AS nombre,
+            COALESCE(p.puesto, a.visita_puesto, 'Visita') AS puesto,
+            a.fecha, a.hora_entrada, a.hora_salida, a.motivo
+     FROM accesos a LEFT JOIN personas p ON p.id = a.persona_id
      ${where}
      ORDER BY a.fecha DESC, a.hora_entrada DESC`,
     params
