@@ -8,3 +8,28 @@ reports/
 *.log
 
 
+
+# Variables de entorno
+.env
+.env.production
+
+# Build / distribución
+dist/
+build/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Qodo
+.qodo/
+
+# Base de datos local
+db/*.sqlite
+db/*.sqlite3
+db/*.db
