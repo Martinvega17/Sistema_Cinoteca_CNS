@@ -5,17 +5,17 @@
   "type": "module",
   "description": "Bitácora de acceso a la Cinoteca del CNS · IPICYT — con backend en Postgres/Neon",
   "scripts": {
-    "build": "npm run build:css && npm run db:migrate && shx cp index.html dist/",
+    "build": "npm run build:css && npm run db:migrate && cp index.html dist/",
     "build:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/css/input.css -o ./css/output.css --minify",
     "watch:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/css/input.css -o ./dist/css/output.css --watch",
-    "dev": "node --env-file=.env scripts/dev-server.js",
+    "dev": "node scripts/dev-server.js",
     "db:migrate": "node --env-file=.env scripts/migrate.js",
     "db:create-admin": "node ./js/scripts/create-admin.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "bcryptjs": "^2.4.3",
-    "cookie": "^2.0.1",
+    "cookie": "^0.6.0",
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
