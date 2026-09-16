@@ -498,7 +498,11 @@ label.field-label {
     position: relative;
     border: 1px dashed var(--line);
     border-radius: 8px;
-    background: #0F1822;
+    /* Fondo blanco a propósito: la tinta ahora es negra (ver
+       signature-pad.js) para que sea legible en la bitácora exportada, así
+       que aquí debe verse como firmar sobre papel — negro sobre blanco —
+       en vez de tinta clara sobre un panel oscuro. */
+    background: #ffffff;
     height: 220px;
 }
 

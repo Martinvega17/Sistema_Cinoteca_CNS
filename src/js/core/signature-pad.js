@@ -94,7 +94,11 @@ export function pedirFirma({ titulo = 'Firma digital', subtitulo = '' } = {}) {
       ctx.lineWidth = 2.4;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#E9EFF5';
+      // Negro sólido: la firma se guarda como PNG con fondo transparente y
+      // termina siempre sobre fondo blanco (bitácora en PDF, vista de solo
+      // lectura, impresión), así que el trazo debe ser oscuro para que se
+      // vea legible ahí — no del color de acento claro que se usa en la UI.
+      ctx.strokeStyle = '#000000';
 
       if (previo) {
         const img = new Image();

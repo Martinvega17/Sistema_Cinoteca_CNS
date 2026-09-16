@@ -1,5 +1,5 @@
 import { query } from '../_db.js';
-import { requireAuth } from '../_auth.js';
+import { requireAdmin } from '../_auth.js';
 
 function csvEscape(value) {
   const str = value === null || value === undefined ? '' : String(value);
@@ -61,4 +61,7 @@ async function handler(req, res) {
   res.status(200).send(csv);
 }
 
-export default requireAuth(handler);
+// Exportar (JSON/CSV/PDF) es una acción de administrador — el rol
+// "usuario" (recepción/cintoteca) puede ver y capturar registros, pero no
+// sacar la bitácora del sistema.
+export default requireAdmin(handler);
