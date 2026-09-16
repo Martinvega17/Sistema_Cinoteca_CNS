@@ -45,8 +45,18 @@ async function start(session) {
 }
 
 const session = await initAuth();
+// El formulario de login se conecta SIEMPRE, sin importar si ya había una
+// sesión activa al cargar la página. Antes solo se conectaba en el rama
+// "sin sesión" de abajo: si la página cargaba con sesión activa y luego el
+// usuario cerraba sesión (logout es solo un cambio de pantalla, sin
+// recargar la página), el formulario de login se quedaba SIN su listener
+// de "submit" para el resto de esa pestaña del navegador. Al intentar
+// entrar con otro usuario, el navegador hacía un envío nativo del <form>
+// (sin método/acción definidos = GET a la URL actual), lo que dejaba
+// "?usuario=...&password=..." pegado en la URL y recargaba la página sin
+// iniciar sesión — de ahí que solo funcionara tras borrar eso de la URL y
+// recargar (esa recarga sí carga sin sesión y sí conecta el formulario).
+wireLoginForm(start);
 if (session) {
   start(session);
-} else {
-  wireLoginForm(start);
 }
