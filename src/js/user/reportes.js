@@ -1,6 +1,8 @@
 import { api } from '../core/api.js';
 import { showToast } from '../core/ui.js';
 import { todayYMD } from '../core/validation.js';
+import { verFirma } from '../core/signature-pad.js';
+import { exportarAccesosPDF } from '../core/pdf-export.js';
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -15,6 +17,11 @@ export function initReportes() {
   const personaFiltro = document.getElementById('reportesPersonaFiltro');
   const exportJsonBtn = document.getElementById('reportesExportJson');
   const exportCsvBtn = document.getElementById('reportesExportCsv');
+  const exportPdfBtn = document.getElementById('reportesExportPdf');
+
+  // Cache de los resultados de la última búsqueda (con firmas), para
+  // generar el PDF sin volver a pedirlos al servidor.
+  let resultadosActuales = [];
   const anioTabsEl = document.getElementById('reportesAnioTabs');
   const mesTabsEl = document.getElementById('reportesMesTabs');
 
@@ -121,6 +128,18 @@ export function initReportes() {
     return params.toString();
   }
 
+  function celdaFirma(r) {
+    const botones = [];
+    if (r.firma_entrada) {
+      botones.push(`<button type="button" class="sig-badge ver-firma-reporte-btn" data-id="${r.id}" data-tipo="entrada">✎ Entrada</button>`);
+    }
+    if (r.firma_salida) {
+      botones.push(`<button type="button" class="sig-badge ver-firma-reporte-btn" data-id="${r.id}" data-tipo="salida">✎ Salida</button>`);
+    }
+    if (!botones.length) return '<span class="text-[var(--text-dim)]">—</span>';
+    return `<div class="flex items-center gap-1.5">${botones.join('')}</div>`;
+  }
+
   function renderRow(r) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -130,6 +149,7 @@ export function initReportes() {
       <td class="font-mono">${r.hora_entrada ? r.hora_entrada.slice(0, 5) : '—'}</td>
       <td class="font-mono">${r.hora_salida ? r.hora_salida.slice(0, 5) : '—'}</td>
       <td>${r.motivo}</td>
+      <td>${celdaFirma(r)}</td>
     `;
     return tr;
   }
@@ -138,6 +158,7 @@ export function initReportes() {
     if (e) e.preventDefault();
     try {
       const rows = await api.get(`/api/accesos?${currentQuery()}`);
+      resultadosActuales = rows;
       tbody.innerHTML = '';
       rows.forEach(r => tbody.appendChild(renderRow(r)));
       countLabel.textContent = rows.length + (rows.length === 1 ? ' resultado' : ' resultados');
@@ -176,6 +197,36 @@ export function initReportes() {
   });
   exportCsvBtn.addEventListener('click', () => {
     window.location.href = `/api/exportar/csv?${currentQuery()}`;
+  });
+  if (exportPdfBtn) {
+    exportPdfBtn.addEventListener('click', () => {
+      if (!resultadosActuales.length) {
+        showToast('No hay resultados que exportar.', 'warning');
+        return;
+      }
+      const desde = form.querySelector('input[name="desde"]').value;
+      const hasta = form.querySelector('input[name="hasta"]').value;
+      exportarAccesosPDF(resultadosActuales, {
+        titulo: 'Bitácora de Acceso a Cintoteca',
+        subtitulo: [desde, hasta].some(Boolean) ? `Periodo: ${desde || '…'} a ${hasta || '…'}` : 'Histórico completo'
+      });
+    });
+  }
+
+  tbody.addEventListener('click', (e) => {
+    const btn = e.target.closest('.ver-firma-reporte-btn');
+    if (!btn) return;
+    const registro = resultadosActuales.find(r => r.id === Number(btn.dataset.id));
+    if (!registro) return;
+    const tipo = btn.dataset.tipo;
+    const dataUrl = tipo === 'entrada' ? registro.firma_entrada : registro.firma_salida;
+    const fecha = tipo === 'entrada' ? registro.firma_entrada_fecha : registro.firma_salida_fecha;
+    if (!dataUrl) return;
+    verFirma({
+      titulo: `Firma de ${tipo} · Folio ${registro.folio_grupo}`,
+      dataUrl,
+      meta: fecha ? new Date(fecha).toLocaleString('es-MX') : ''
+    });
   });
 
   cargarPersonasFiltro();

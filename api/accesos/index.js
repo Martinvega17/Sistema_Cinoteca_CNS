@@ -4,6 +4,13 @@ import { isWithinMargin, todayYMD } from '../../src/js/core/validation.js';
 
 const ENTRY_MARGIN_MINUTES = 3;
 
+// La firma llega como data URL PNG (ver src/js/core/signature-pad.js).
+// Se valida el formato aquí mismo, además de en el cliente, porque el
+// cliente nunca es de confianza.
+function esFirmaValida(firma) {
+  return typeof firma === 'string' && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(firma);
+}
+
 // Roles que pueden ejecutar CUALQUIER borrado sobre `accesos`. Dentro de
 // handleDelete se aplica una restricción adicional: "borrar todo" solo la
 // puede ejecutar "responsable_institucional" (ver esa función).
@@ -30,7 +37,9 @@ async function handleGet(req, res) {
             COALESCE(p.puesto, a.visita_puesto, 'Visita') AS puesto,
             (a.persona_id IS NULL) AS es_visita_suelta,
             a.acompanante_id,
-            COALESCE(ac.nombre, a.acompanante_nombre) AS acompanante
+            COALESCE(ac.nombre, a.acompanante_nombre) AS acompanante,
+            a.firma_entrada, a.firma_entrada_fecha,
+            a.firma_salida, a.firma_salida_fecha
      FROM accesos a
      LEFT JOIN personas p ON p.id = a.persona_id
      LEFT JOIN personas ac ON ac.id = a.acompanante_id
@@ -45,7 +54,7 @@ async function handleGet(req, res) {
 async function handlePost(req, res) {
   const {
     personas, visitas, horaEntrada, motivo,
-    acompananteId, acompananteNombre
+    acompananteId, acompananteNombre, firma
   } = req.body || {};
 
   const listaPersonas = Array.isArray(personas) ? personas : [];
@@ -64,6 +73,10 @@ async function handlePost(req, res) {
   }
   if (!motivo) {
     res.status(400).json({ error: 'El motivo de acceso es obligatorio.' });
+    return;
+  }
+  if (!esFirmaValida(firma)) {
+    res.status(400).json({ error: 'Debes registrar la firma digital para poder guardar la entrada.' });
     return;
   }
   if (!isWithinMargin(horaEntrada, ENTRY_MARGIN_MINUTES)) {
@@ -103,23 +116,28 @@ async function handlePost(req, res) {
   // medianoche en México.
   const fecha = todayYMD();
 
+  // La misma firma capturada una sola vez en el formulario se guarda en
+  // cada renglón del folio (uno por persona) — todas las personas que
+  // entran juntas quedan cubiertas por la firma de quien registró el
+  // acceso, igual que pasaría con una firma de tinta en una bitácora
+  // física compartida.
   const inserted = [];
   for (const personaId of listaPersonas) {
     const { rows } = await query(
-      `INSERT INTO accesos (folio_grupo, persona_id, fecha, hora_entrada, motivo, registrado_por)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, visita_nombre, visita_puesto, acompanante_id, acompanante_nombre`,
-      [folioGrupo, personaId, fecha, horaEntrada, motivo, req.user.sub]
+      `INSERT INTO accesos (folio_grupo, persona_id, fecha, hora_entrada, motivo, registrado_por, firma_entrada, firma_entrada_fecha)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+       RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, visita_nombre, visita_puesto, acompanante_id, acompanante_nombre, firma_entrada, firma_entrada_fecha`,
+      [folioGrupo, personaId, fecha, horaEntrada, motivo, req.user.sub, firma]
     );
     inserted.push(rows[0]);
   }
 
   for (const visita of listaVisitas) {
     const { rows } = await query(
-      `INSERT INTO accesos (folio_grupo, persona_id, visita_nombre, visita_puesto, acompanante_id, acompanante_nombre, fecha, hora_entrada, motivo, registrado_por)
-       VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, visita_nombre, visita_puesto, acompanante_id, acompanante_nombre`,
-      [folioGrupo, visita.nombre, visita.puesto || null, acompananteIdNum, acompananteIdNum ? null : acompananteNombreLimpio, fecha, horaEntrada, motivo, req.user.sub]
+      `INSERT INTO accesos (folio_grupo, persona_id, visita_nombre, visita_puesto, acompanante_id, acompanante_nombre, fecha, hora_entrada, motivo, registrado_por, firma_entrada, firma_entrada_fecha)
+       VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, $8, $9, $10, now())
+       RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, visita_nombre, visita_puesto, acompanante_id, acompanante_nombre, firma_entrada, firma_entrada_fecha`,
+      [folioGrupo, visita.nombre, visita.puesto || null, acompananteIdNum, acompananteIdNum ? null : acompananteNombreLimpio, fecha, horaEntrada, motivo, req.user.sub, firma]
     );
     inserted.push(rows[0]);
   }

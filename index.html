@@ -12,6 +12,8 @@
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- jsPDF: genera los PDF de exportación con las firmas digitales embebidas -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 </head>
 <body class="min-h-screen">
 
@@ -168,7 +170,7 @@
             </button>
 
             <p class="text-[10.5px] text-[var(--text-dim)] leading-relaxed pt-1">
-              El folio se asigna automáticamente al guardar. Este formulario no incluye firma; el registro queda guardado en la base de datos central. Para cerrar un acceso, usa "Registrar salida" en la persona correspondiente.
+              El folio se asigna automáticamente al guardar. Al enviar el formulario se pedirá firmar digitalmente (desde celular, PC o tablet) antes de guardar el registro. Para cerrar un acceso, usa "Registrar salida" en la persona correspondiente, lo que también pedirá firma.
             </p>
           </form>
         </section>
@@ -179,6 +181,10 @@
             <h3 class="font-display text-sm font-semibold text-[var(--text-hi)] letter-space uppercase">Registros de hoy</h3>
             <div class="flex items-center gap-3">
               <span class="font-mono text-[11px] text-[var(--text-dim)]" id="recordCount">0 registros</span>
+              <button type="button" id="exportPdfBtn" class="btn-export flex items-center gap-1.5 text-[11px] px-2.5 py-1.5">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+                Exportar PDF (con firmas)
+              </button>
               <button type="button" id="exportBtn" class="btn-export flex items-center gap-1.5 text-[11px] px-2.5 py-1.5">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
                 Exportar hoy (JSON)
@@ -245,6 +251,7 @@
             <h3 class="font-display text-sm font-semibold text-[var(--text-hi)] letter-space uppercase">Resultados</h3>
             <div class="flex items-center gap-3">
               <span class="font-mono text-[11px] text-[var(--text-dim)]" id="reportesCount">0 resultados</span>
+              <button type="button" id="reportesExportPdf" class="btn-export text-[11px] px-2.5 py-1.5">Exportar PDF (con firmas)</button>
               <button type="button" id="reportesExportJson" class="btn-export text-[11px] px-2.5 py-1.5">Exportar JSON</button>
               <button type="button" id="reportesExportCsv" class="btn-export text-[11px] px-2.5 py-1.5">Exportar CSV</button>
             </div>
@@ -259,6 +266,7 @@
                   <th>Entrada</th>
                   <th>Salida</th>
                   <th>Motivo</th>
+                  <th>Firma</th>
                 </tr>
               </thead>
               <tbody id="reportesBody"></tbody>
@@ -412,7 +420,7 @@
     <footer class="border-t border-[var(--line)] bg-[var(--bg-panel)]/60">
       <div class="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         <p class="text-[11px] text-[var(--text-dim)] leading-relaxed max-w-2xl">
-          Cada registro debe completarse de forma legible y sin omisiones. La bitácora debe mantenerse bajo resguardo por un periodo mínimo de 12 meses. Los datos se guardan directamente en la base de datos central; usa "Exportar" para generar un respaldo en JSON o CSV.
+          Cada registro debe completarse de forma legible, con firma digital y sin omisiones. La bitácora debe mantenerse bajo resguardo por un periodo mínimo de 12 meses. Los datos se guardan directamente en la base de datos central; usa "Exportar" para generar un respaldo en JSON, CSV o PDF (este último incluye las firmas capturadas).
         </p>
         <div class="flex items-center gap-2 shrink-0">
           <span class="w-1.5 h-1.5 rounded-full bg-[var(--teal)]"></span>

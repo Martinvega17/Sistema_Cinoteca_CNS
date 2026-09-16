@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /api, /db, .gitgnone, .git, .env
+Allow: /wp-admin/admin-ajax.php
+
+Sitemap: https://slp.tecnm.mx/wp-sitemap.xml
+
+User-agent: *
+Disallow: /wp-content/uploads/wpo/wpo-plugins-tables-list.json
+
+Sitemap: https://www.ipicyt.edu.mx/sitemap.xml

@@ -1,6 +1,8 @@
 import { api } from '../core/api.js';
 import { isWithinMargin, formatHM, todayYMD } from '../core/validation.js';
 import { showToast } from '../core/ui.js';
+import { pedirFirma, verFirma } from '../core/signature-pad.js';
+import { exportarAccesosPDF } from '../core/pdf-export.js';
 
 const ENTRY_MARGIN_MINUTES = 3;
 
@@ -10,8 +12,13 @@ export function initRecords(multiselect, quickVisits) {
   const emptyState = document.getElementById('emptyState');
   const recordCount = document.getElementById('recordCount');
   const exportBtn = document.getElementById('exportBtn');
+  const exportPdfBtn = document.getElementById('exportPdfBtn');
   const horaEntradaInput = document.querySelector('input[name="horaEntrada"]');
   const msTrigger = document.getElementById('msTrigger');
+
+  // Cache local de los registros de hoy tal como los regresa la API (con
+  // firmas incluidas), para poder generar el PDF sin volver a pedirlos.
+  let registrosHoy = [];
 
   function flashError(el) {
     el.classList.add('ring-2', 'ring-[var(--danger)]');
@@ -43,6 +50,21 @@ export function initRecords(multiselect, quickVisits) {
     return order.map(f => groups.get(f));
   }
 
+  function firmaBadgeHtml(row, tipo) {
+    // tipo: 'entrada' | 'salida'
+    const tieneFirma = tipo === 'entrada' ? row.firma_entrada : row.firma_salida;
+    if (tieneFirma) {
+      return `<button type="button" class="sig-badge ver-firma-btn" data-tipo="${tipo}" title="Ver firma de ${tipo}">✎ Firmado</button>`;
+    }
+    // Solo aplica a "salida": una entrada siempre queda firmada al
+    // guardarse (es obligatoria), así que no hace falta un estado
+    // "pendiente" para entrada.
+    if (tipo === 'salida' && row.hora_salida) {
+      return `<span class="sig-badge sig-badge-pendiente">Sin firma</span>`;
+    }
+    return '';
+  }
+
   function personRowHtml(row) {
     const salida = row.hora_salida ? row.hora_salida.slice(0, 5) : null;
     return `
@@ -50,6 +72,10 @@ export function initRecords(multiselect, quickVisits) {
         <div>
           <div class="lc-person"><span class="font-semibold">${row.nombre}</span> <span class="lc-person-puesto">· ${row.puesto}</span></div>
           <div class="lc-person-times font-mono">Entrada ${row.hora_entrada ? row.hora_entrada.slice(0, 5) : '—'} · Salida <span class="salida-cell">${salida || '—'}</span></div>
+          <div class="flex items-center gap-1.5 mt-1 firmas-cell">
+            ${firmaBadgeHtml(row, 'entrada')}
+            ${firmaBadgeHtml(row, 'salida')}
+          </div>
         </div>
         <div class="estado-cell">
           ${salida
@@ -94,6 +120,7 @@ export function initRecords(multiselect, quickVisits) {
     logList.innerHTML = '';
     try {
       const rows = await api.get(`/api/accesos?desde=${todayStr()}&hasta=${todayStr()}`);
+      registrosHoy = rows;
       groupByFolio(rows).forEach(g => logList.appendChild(renderGroupCard(g)));
       updateCount();
     } catch (err) {
@@ -142,6 +169,18 @@ export function initRecords(multiselect, quickVisits) {
       return;
     }
 
+    // Firma digital obligatoria antes de guardar la entrada. Se pide justo
+    // aquí (ya validado todo lo demás) para no hacer firmar a alguien y
+    // luego rechazar el registro por otro motivo.
+    const firma = await pedirFirma({
+      titulo: 'Firma de entrada',
+      subtitulo: 'Firma para confirmar el registro de entrada a la cintoteca.'
+    });
+    if (!firma) {
+      showToast('Debes registrar tu firma digital para guardar la entrada.');
+      return;
+    }
+
     try {
       const resultado = await api.post('/api/accesos', {
         personas: personas.map(p => Number(p.id)),
@@ -149,7 +188,8 @@ export function initRecords(multiselect, quickVisits) {
         acompananteId,
         acompananteNombre,
         horaEntrada,
-        motivo: formData.motivo
+        motivo: formData.motivo,
+        firma
       });
 
       const rows = resultado.registros.map(r => {
@@ -161,9 +201,10 @@ export function initRecords(multiselect, quickVisits) {
         // guardó en el renglón de accesos (nunca en la tabla personas).
         return { ...r, nombre: r.visita_nombre, puesto: r.visita_puesto || 'Visita' };
       });
+      registrosHoy = [...rows, ...registrosHoy];
       logList.prepend(renderGroupCard({ folio_grupo: resultado.folio_grupo, motivo: formData.motivo, personas: rows }));
       updateCount();
-      showToast(`Folio ${resultado.folio_grupo} registrado.`, 'warning');
+      showToast(`Folio ${resultado.folio_grupo} registrado y firmado.`, 'warning');
 
       form.reset();
       document.querySelectorAll('#msPanel input[type="checkbox"]').forEach(c => c.checked = false);
@@ -176,17 +217,54 @@ export function initRecords(multiselect, quickVisits) {
   });
 
   logList.addEventListener('click', async (e) => {
+    const verFirmaBtn = e.target.closest('.ver-firma-btn');
+    if (verFirmaBtn) {
+      const row = verFirmaBtn.closest('.lc-person-row');
+      const accesoId = Number(row.dataset.accesoId);
+      const tipo = verFirmaBtn.dataset.tipo;
+      const registro = registrosHoy.find(r => r.id === accesoId);
+      const dataUrl = registro && (tipo === 'entrada' ? registro.firma_entrada : registro.firma_salida);
+      if (!dataUrl) return;
+      const fechaFirma = tipo === 'entrada' ? registro.firma_entrada_fecha : registro.firma_salida_fecha;
+      verFirma({
+        titulo: `Firma de ${tipo}`,
+        dataUrl,
+        meta: fechaFirma ? new Date(fechaFirma).toLocaleString('es-MX') : ''
+      });
+      return;
+    }
+
     const btn = e.target.closest('.registrar-salida-btn');
     if (!btn) return;
     const row = btn.closest('.lc-person-row');
     const accesoId = row.dataset.accesoId;
 
+    // Firma digital obligatoria también para cerrar el acceso.
+    const firma = await pedirFirma({
+      titulo: 'Firma de salida',
+      subtitulo: 'Firma para confirmar el registro de salida de la cintoteca.'
+    });
+    if (!firma) {
+      showToast('Debes registrar tu firma digital para guardar la salida.');
+      return;
+    }
+
     try {
-      const actualizado = await api.patch(`/api/accesos/${accesoId}/salida`);
+      const actualizado = await api.patch(`/api/accesos/${accesoId}/salida`, { firma });
       const horaSalida = actualizado.hora_salida.slice(0, 5);
       row.querySelector('.salida-cell').textContent = horaSalida;
       row.querySelector('.estado-cell').innerHTML =
         `<span class="status-chip status-fuera">SALIDA · ${horaSalida}</span>`;
+      const registro = registrosHoy.find(r => r.id === Number(accesoId));
+      if (registro) {
+        registro.hora_salida = actualizado.hora_salida;
+        registro.firma_salida = actualizado.firma_salida;
+        registro.firma_salida_fecha = actualizado.firma_salida_fecha;
+      }
+      if (registro) {
+        row.querySelector('.firmas-cell').innerHTML =
+          `${firmaBadgeHtml(registro, 'entrada')}${firmaBadgeHtml(registro, 'salida')}`;
+      }
     } catch (err) {
       showToast(err.message);
     }
@@ -195,6 +273,19 @@ export function initRecords(multiselect, quickVisits) {
   exportBtn.addEventListener('click', () => {
     window.location.href = `/api/exportar/json?desde=${todayStr()}&hasta=${todayStr()}`;
   });
+
+  if (exportPdfBtn) {
+    exportPdfBtn.addEventListener('click', () => {
+      if (!registrosHoy.length) {
+        showToast('No hay registros de hoy que exportar.', 'warning');
+        return;
+      }
+      exportarAccesosPDF(registrosHoy, {
+        titulo: 'Bitácora de Acceso a Cintoteca',
+        subtitulo: `Registros de hoy · ${todayStr()}`
+      });
+    });
+  }
 
   horaEntradaInput.value = new Date().toTimeString().slice(0, 5);
   loadToday();

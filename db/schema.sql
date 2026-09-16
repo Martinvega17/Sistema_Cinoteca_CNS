@@ -104,6 +104,19 @@ ALTER TABLE accesos ADD CONSTRAINT chk_accesos_acompanante_visita
     OR acompanante_nombre IS NOT NULL
   );
 
+-- ---------------------------------------------------------------------------
+-- Firma digital — capturada en pantalla (canvas) desde celular, PC o
+-- tablet, tanto al registrar la entrada como al registrar la salida.
+-- Se guarda como imagen PNG codificada en base64 (data URL), lista para
+-- insertarse tal cual en el PDF exportado. NO se agrega una tabla aparte:
+-- va en el mismo renglón de `accesos` porque cada renglón ya representa a
+-- una persona en un momento (entrada o salida) concreto.
+-- ---------------------------------------------------------------------------
+ALTER TABLE accesos ADD COLUMN IF NOT EXISTS firma_entrada TEXT;
+ALTER TABLE accesos ADD COLUMN IF NOT EXISTS firma_entrada_fecha TIMESTAMPTZ;
+ALTER TABLE accesos ADD COLUMN IF NOT EXISTS firma_salida TEXT;
+ALTER TABLE accesos ADD COLUMN IF NOT EXISTS firma_salida_fecha TIMESTAMPTZ;
+
 CREATE INDEX IF NOT EXISTS idx_accesos_fecha ON accesos (fecha);
 CREATE INDEX IF NOT EXISTS idx_accesos_persona ON accesos (persona_id);
 CREATE INDEX IF NOT EXISTS idx_accesos_folio_grupo ON accesos (folio_grupo);

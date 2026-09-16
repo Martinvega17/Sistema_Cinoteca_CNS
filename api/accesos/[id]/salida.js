@@ -2,6 +2,11 @@ import { query } from '../../_db.js';
 import { requireAuth, logAudit } from '../../_auth.js';
 import { isExitAfterEntry, formatHM } from '../../../src/js/core/validation.js';
 
+// Mismo formato/validación que en api/accesos/index.js: data URL PNG.
+function esFirmaValida(firma) {
+  return typeof firma === 'string' && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(firma);
+}
+
 async function handler(req, res) {
   if (req.method !== 'PATCH') {
     res.status(405).json({ error: 'Método no permitido.' });
@@ -9,6 +14,12 @@ async function handler(req, res) {
   }
 
   const { id } = req.query;
+  const { firma } = req.body || {};
+
+  if (!esFirmaValida(firma)) {
+    res.status(400).json({ error: 'Debes registrar la firma digital para poder registrar la salida.' });
+    return;
+  }
 
   const { rows: existentes } = await query(
     'SELECT id, hora_entrada, hora_salida FROM accesos WHERE id = $1',
@@ -36,12 +47,12 @@ async function handler(req, res) {
 
   const horaSalida = formatHM(now);
   const { rows } = await query(
-    `UPDATE accesos SET hora_salida = $1 WHERE id = $2
-     RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id`,
-    [horaSalida, id]
+    `UPDATE accesos SET hora_salida = $1, firma_salida = $2, firma_salida_fecha = now() WHERE id = $3
+     RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, firma_salida, firma_salida_fecha`,
+    [horaSalida, firma, id]
   );
 
-  await logAudit(req.user.sub, 'accesos.salida', `accesos:${id}`, { horaSalida });
+  await logAudit(req.user.sub, 'accesos.salida', `accesos:${id}`, { horaSalida, firmada: true });
 
   res.status(200).json(rows[0]);
 }
