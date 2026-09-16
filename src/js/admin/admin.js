@@ -1,6 +1,12 @@
 import { api } from '../core/api.js';
 import { showToast } from '../core/ui.js';
 
+const ETIQUETAS_ROL = {
+  usuario: 'Usuario',
+  administrador: 'Administrador',
+  responsable_institucional: 'Responsable institucional'
+};
+
 export function initAdminPanel({ onLimpiarHoy, onBorrarTodo } = {}) {
   const usuariosForm = document.getElementById('usuariosForm');
   const usuariosBody = document.getElementById('usuariosBody');
@@ -21,6 +27,7 @@ export function initAdminPanel({ onLimpiarHoy, onBorrarTodo } = {}) {
           <select class="inline-edit-input" name="rol">
             <option value="usuario" ${u.rol === 'usuario' ? 'selected' : ''}>Usuario</option>
             <option value="administrador" ${u.rol === 'administrador' ? 'selected' : ''}>Administrador</option>
+            <option value="responsable_institucional" ${u.rol === 'responsable_institucional' ? 'selected' : ''}>Responsable institucional</option>
           </select>
         </td>
         <td>
@@ -36,7 +43,7 @@ export function initAdminPanel({ onLimpiarHoy, onBorrarTodo } = {}) {
 
     tr.innerHTML = `
       <td>${u.usuario}</td>
-      <td class="capitalize">${u.rol}</td>
+      <td>${ETIQUETAS_ROL[u.rol] || u.rol}</td>
       <td>${u.activo
         ? '<span class="status-chip status-dentro">ACTIVO</span>'
         : '<span class="status-chip status-fuera">INACTIVO</span>'}</td>
@@ -176,8 +183,20 @@ export function initAdminPanel({ onLimpiarHoy, onBorrarTodo } = {}) {
     }
   });
 
-  // Doble confirmación (confirm + escribir "BORRAR") porque esto borra
-  // TODO el historial de accesos, de cualquier fecha — no solo el de hoy.
+  // Controles para "Borrar TODO el historial" (ver FA-PT-0002 §8 y Manual
+  // de Administrador §3.6):
+  //   1. Solo la ve/puede accionar una cuenta "responsable_institucional"
+  //      (el botón está oculto para Administrador — ver data-responsable-only
+  //      en auth.js).
+  //   2. Doble confirmación local (confirm + escribir "BORRAR").
+  //   3. Doble AUTORIZACIÓN real: se pide usuario y contraseña de una
+  //      segunda cuenta (Administrador o Responsable institucional,
+  //      distinta de la que inició sesión), que el servidor valida antes
+  //      de borrar. Sin esto, el servidor rechaza la solicitud aunque el
+  //      rol sea el correcto.
+  //   4. El servidor guarda automáticamente un respaldo completo de los
+  //      registros antes de borrarlos (respaldos_eliminacion) — no depende
+  //      de que alguien haya exportado manualmente ese día.
   borrarTodoBtn.addEventListener('click', async () => {
     const primeraConfirmacion = window.confirm(
       'Esto va a borrar TODO el historial de accesos (de cualquier fecha, no solo hoy) y reiniciar el folio a 001. No se puede deshacer. ¿Continuar?'
@@ -190,12 +209,25 @@ export function initAdminPanel({ onLimpiarHoy, onBorrarTodo } = {}) {
       return;
     }
 
+    const segundoUsuario = window.prompt(
+      'Autorización requerida: escribe el nombre de USUARIO de un segundo Administrador o Responsable institucional (una cuenta distinta a la tuya).'
+    );
+    if (!segundoUsuario) {
+      showToast('Cancelado: se requiere un segundo usuario que autorice.');
+      return;
+    }
+    const segundoPassword = window.prompt(`Contraseña de "${segundoUsuario}" para autorizar el borrado:`);
+    if (!segundoPassword) {
+      showToast('Cancelado: se requiere la contraseña del segundo usuario.');
+      return;
+    }
+
     borrarTodoBtn.disabled = true;
     try {
-      const resultado = await api.delete('/api/accesos?todo=true');
+      const resultado = await api.delete('/api/accesos?todo=true', { segundoUsuario, segundoPassword });
       showToast(
         resultado.eliminados
-          ? `${resultado.eliminados} registro(s) eliminados de TODO el historial. Folio reiniciado a 001.`
+          ? `${resultado.eliminados} registro(s) eliminados de TODO el historial (respaldados automáticamente). Folio reiniciado a 001.`
           : 'No había registros que eliminar. Folio reiniciado a 001.',
         'warning'
       );

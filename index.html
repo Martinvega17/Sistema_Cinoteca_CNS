@@ -136,6 +136,15 @@
               <p class="text-[10px] text-[var(--text-dim)] mt-1">Para alguien que entra una sola vez. Queda en la bitácora de accesos, pero NO se guarda en el directorio de personal.</p>
             </div>
 
+            <div id="acompananteBlock" class="hidden">
+              <label class="field-label">Acompañado por (personal del área)</label>
+              <select id="acompananteSelect" class="input-field">
+                <option value="" disabled selected>Selecciona quién acompaña</option>
+              </select>
+              <input type="text" id="acompananteNombre" class="input-field mt-2" placeholder="O escribe el nombre si no está en el directorio">
+              <p class="text-[10px] text-[var(--text-dim)] mt-1">Obligatorio: todo personal externo o de otra área debe ingresar acompañado por personal de almacenamiento y respaldos (FA-PT-0002).</p>
+            </div>
+
             <div>
               <label class="field-label">Hora de entrada</label>
               <input required type="time" name="horaEntrada" class="input-field font-mono">
@@ -325,6 +334,7 @@
               <select name="rol" class="input-field">
                 <option value="usuario">Usuario</option>
                 <option value="administrador">Administrador</option>
+                <option value="responsable_institucional">Responsable institucional</option>
               </select>
             </div>
             <button type="submit" class="btn-primary py-2.5 text-sm">+ Agregar usuario</button>
@@ -341,15 +351,20 @@
             </div>
            <button type="button" id="limpiarHoyBtn" class="btn-danger-outline text-[11px] px-3 py-1.5 shrink-0">Limpiar registros de hoy</button>
           </div>
-          <div class="flex items-center justify-between flex-wrap gap-4 mt-5 pt-5 border-t border-[var(--line)]">
+          <div class="flex items-center justify-between flex-wrap gap-4 mt-5 pt-5 border-t border-[var(--line)]" data-responsable-only>
             <div>
               <h3 class="font-display text-sm font-semibold text-[var(--danger)] letter-space uppercase">Borrar TODO el historial</h3>
               <p class="text-[10.5px] text-[var(--text-dim)] mt-1 max-w-md leading-relaxed">
-                Elimina TODOS los accesos de la base de datos, de cualquier fecha (no solo hoy), y reinicia el folio a 001. Es permanente y no se puede deshacer — úsalo solo mientras haces pruebas.
+                Elimina TODOS los accesos de la base de datos, de cualquier fecha (no solo hoy), y reinicia el folio a 001. Es permanente y no se puede deshacer.
+                Requiere autorización de un segundo Administrador o Responsable institucional (usuario y contraseña, distintos a esta cuenta); el sistema
+                guarda automáticamente una copia completa de los registros antes de borrarlos.
               </p>
             </div>
             <button type="button" id="borrarTodoBtn" class="btn-danger-outline text-[11px] px-3 py-1.5 shrink-0">Borrar TODO el historial</button>
           </div>
+          <p class="text-[10.5px] text-[var(--text-dim)] mt-4 pt-4 border-t border-[var(--line)]" data-responsable-hidden-note>
+            "Borrar TODO el historial" solo puede solicitarla una cuenta con rol "Responsable institucional". Si necesitas ejecutarla, pide a esa cuenta que inicie sesión.
+          </p>
         </section>
 
         <section class="panel rounded-xl overflow-hidden flex flex-col mb-6">

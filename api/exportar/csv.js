@@ -28,20 +28,24 @@ async function handler(req, res) {
     `SELECT a.folio_grupo,
             COALESCE(p.nombre, a.visita_nombre) AS nombre,
             COALESCE(p.puesto, a.visita_puesto, 'Visita') AS puesto,
+            COALESCE(ac.nombre, a.acompanante_nombre) AS acompanante,
             a.fecha, a.hora_entrada, a.hora_salida, a.motivo
-     FROM accesos a LEFT JOIN personas p ON p.id = a.persona_id
+     FROM accesos a
+     LEFT JOIN personas p ON p.id = a.persona_id
+     LEFT JOIN personas ac ON ac.id = a.acompanante_id
      ${where}
      ORDER BY a.fecha DESC, a.hora_entrada DESC`,
     params
   );
 
-  const headers = ['Folio', 'Nombre', 'Puesto', 'Fecha', 'Hora entrada', 'Hora salida', 'Motivo'];
+  const headers = ['Folio', 'Nombre', 'Puesto', 'Acompañante', 'Fecha', 'Hora entrada', 'Hora salida', 'Motivo'];
   const lines = [headers.join(',')];
   rows.forEach(r => {
     lines.push([
       csvEscape(r.folio_grupo),
       csvEscape(r.nombre),
       csvEscape(r.puesto),
+      csvEscape(r.acompanante),
       csvEscape(r.fecha.toISOString().slice(0, 10)),
       csvEscape(r.hora_entrada),
       csvEscape(r.hora_salida),

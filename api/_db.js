@@ -30,3 +30,11 @@ export async function query(text, params) {
   const client = getPool();
   return client.query(text, params);
 }
+
+// Cliente dedicado para operaciones que necesitan transacción (BEGIN/COMMIT/
+// ROLLBACK) — p. ej. respaldar y borrar en la misma unidad atómica en
+// api/accesos/index.js. Quien lo pide es responsable de client.release().
+export async function getClient() {
+  const pool = getPool();
+  return pool.connect();
+}

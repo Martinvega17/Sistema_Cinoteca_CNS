@@ -1,3 +1,4 @@
+import { api } from '../core/api.js';
 import { showToast } from '../core/ui.js';
 
 /**
@@ -15,10 +16,66 @@ export function initQuickVisits() {
   const puestoInput = document.getElementById('qvPuesto');
   const addBtn = document.getElementById('qvAddBtn');
   const chipsBox = document.getElementById('qvChips');
+  // FA-PT-0002 (Alcance): toda visita/personal externo debe ir acompañado
+  // por personal del área — este bloque solo se muestra (y solo se exige
+  // al guardar, ver records.js) cuando hay al menos una visita agregada.
+  const acompananteBlock = document.getElementById('acompananteBlock');
+  const acompananteSelect = document.getElementById('acompananteSelect');
+  const acompananteNombreInput = document.getElementById('acompananteNombre');
 
   let visitas = []; // [{ nombre, puesto }]
 
+  // Se carga una sola vez: mismo directorio que "Personas que ingresan"
+  // (GET /api/personas?activos=true), para elegir quién acompaña a la
+  // visita sin tener que escribir el nombre a mano.
+  async function loadAcompanantes() {
+    if (!acompananteSelect) return;
+    try {
+      const personas = await api.get('/api/personas?activos=true');
+      personas.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = `${p.nombre} · ${p.puesto}`;
+        acompananteSelect.appendChild(opt);
+      });
+    } catch {
+      // Si falla la carga, queda disponible el campo de texto libre como
+      // respaldo — no se bloquea el registro por esto.
+    }
+  }
+  loadAcompanantes();
+
+  function getAcompanante() {
+    return {
+      acompananteId: acompananteSelect && acompananteSelect.value ? acompananteSelect.value : null,
+      acompananteNombre: acompananteNombreInput ? acompananteNombreInput.value.trim() : '',
+      requiereAcompanante: necesitaAcompananteManual()
+    };
+  }
+
+  function resetAcompanante() {
+    if (acompananteSelect) acompananteSelect.value = '';
+    if (acompananteNombreInput) acompananteNombreInput.value = '';
+  }
+
+  // Cuántas personas del directorio ("Personas que ingresan") vienen en el
+  // mismo folio ahora mismo. records.js la actualiza con
+  // actualizarPersonasSeleccionadas() cada vez que cambia esa selección.
+  let personasSeleccionadas = 0;
+
+  function necesitaAcompananteManual() {
+    // Si ya viene al menos una persona del directorio en el mismo folio, esa
+    // persona es quien acompaña a la visita — no hace falta pedirlo aparte.
+    return visitas.length > 0 && personasSeleccionadas === 0;
+  }
+
+  function actualizarPersonasSeleccionadas(cantidad) {
+    personasSeleccionadas = cantidad;
+    render();
+  }
+
   function render() {
+    if (acompananteBlock) acompananteBlock.classList.toggle('hidden', !necesitaAcompananteManual());
     chipsBox.innerHTML = '';
     visitas.forEach((v, i) => {
       const chip = document.createElement('span');
@@ -66,8 +123,9 @@ export function initQuickVisits() {
 
   function reset() {
     visitas = [];
+    resetAcompanante();
     render();
   }
 
-  return { getVisitas, reset };
+  return { getVisitas, reset, getAcompanante, actualizarPersonasSeleccionadas };
 }

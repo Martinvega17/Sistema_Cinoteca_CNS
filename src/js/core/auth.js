@@ -8,13 +8,29 @@ const loginError = document.getElementById('loginError');
 function showApp(session) {
   loginScreen.classList.add('hidden');
   appShell.classList.remove('hidden');
-  document.getElementById('sessionUsuario').textContent = session.usuario;
-  document.getElementById('sessionRol').textContent =
-    session.rol === 'administrador' ? 'Administrador' : 'Usuario';
+  const ETIQUETAS_ROL = {
+    administrador: 'Administrador',
+    responsable_institucional: 'Responsable institucional',
+    usuario: 'Usuario'
+  };
 
-  const esAdmin = session.rol === 'administrador';
+  document.getElementById('sessionUsuario').textContent = session.usuario;
+  document.getElementById('sessionRol').textContent = ETIQUETAS_ROL[session.rol] || 'Usuario';
+
+  // "responsable_institucional" ve todo lo que ve un Administrador (Personal,
+  // Admin), más el bloque de "Borrar TODO el historial", que un Administrador
+  // ya NO puede ejecutar por sí solo.
+  const esAdmin = session.rol === 'administrador' || session.rol === 'responsable_institucional';
+  const esResponsable = session.rol === 'responsable_institucional';
+
   document.querySelectorAll('[data-admin-only]').forEach(el => {
     el.classList.toggle('hidden', !esAdmin);
+  });
+  document.querySelectorAll('[data-responsable-only]').forEach(el => {
+    el.classList.toggle('hidden', !esResponsable);
+  });
+  document.querySelectorAll('[data-responsable-hidden-note]').forEach(el => {
+    el.classList.toggle('hidden', esResponsable);
   });
 }
 

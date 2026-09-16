@@ -7,8 +7,13 @@ import { api } from '../core/api.js';
  * alta aquí ni se guardan en el directorio `personas` — se capturan aparte
  * con el cuadro "Visita o personal externo" (ver quickvisits.js), y solo
  * quedan registradas en la bitácora de accesos, nunca en `personas`.
+ *
+ * onChange (opcional): se invoca cada vez que cambia la selección, con la
+ * lista actual de seleccionados. La usa records.js para decidir si el
+ * bloque "Acompañado por" de quickvisits.js debe mostrarse o no (si ya hay
+ * personal fijo en el mismo folio, no hace falta pedir acompañante aparte).
  */
-export async function initMultiselect() {
+export async function initMultiselect(onChange) {
   const msTrigger = document.getElementById('msTrigger');
   const msTriggerLabel = document.getElementById('msTriggerLabel');
   const msPanel = document.getElementById('msPanel');
@@ -45,6 +50,12 @@ export async function initMultiselect() {
       .map(c => ({ id: c.value, nombre: c.dataset.nombre, puesto: c.dataset.puesto }));
   }
 
+  function uncheck(id) {
+    const input = msPanel.querySelector(`input[type="checkbox"][value="${id}"]`);
+    if (input) input.checked = false;
+    refreshSelection();
+  }
+
   function refreshSelection() {
     const selected = getSelected();
     msTriggerLabel.textContent = selected.length
@@ -56,9 +67,14 @@ export async function initMultiselect() {
     selected.forEach(p => {
       const chip = document.createElement('span');
       chip.className = 'chip';
-      chip.textContent = `${p.nombre} · ${p.puesto}`;
+      chip.innerHTML = `
+        ${p.nombre} · ${p.puesto}
+        <button type="button" class="chip-remove" data-id="${p.id}" aria-label="Quitar">×</button>
+      `;
       msChips.appendChild(chip);
     });
+
+    if (onChange) onChange(selected);
   }
 
   msTrigger.addEventListener('click', () => msPanel.classList.toggle('hidden'));
@@ -67,6 +83,10 @@ export async function initMultiselect() {
   });
   msPanel.addEventListener('change', (e) => {
     if (e.target.type === 'checkbox') refreshSelection();
+  });
+  msChips.addEventListener('click', (e) => {
+    const btn = e.target.closest('.chip-remove');
+    if (btn) uncheck(btn.dataset.id);
   });
 
   await loadPersonnel();

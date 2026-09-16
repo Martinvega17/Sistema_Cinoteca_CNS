@@ -35,7 +35,7 @@ export function initRecords(multiselect, quickVisits) {
     const groups = new Map();
     rows.forEach(row => {
       if (!groups.has(row.folio_grupo)) {
-        groups.set(row.folio_grupo, { folio_grupo: row.folio_grupo, motivo: row.motivo, personas: [] });
+        groups.set(row.folio_grupo, { folio_grupo: row.folio_grupo, motivo: row.motivo, acompanante: row.acompanante || null, personas: [] });
         order.push(row.folio_grupo);
       }
       groups.get(row.folio_grupo).personas.push(row);
@@ -74,6 +74,11 @@ export function initRecords(multiselect, quickVisits) {
           <span class="lc-field-label">Motivo de acceso</span>
           <span class="lc-field-value">${group.motivo}</span>
         </div>
+        ${group.acompanante ? `
+        <div class="lc-motivo">
+          <span class="lc-field-label">Acompañado por</span>
+          <span class="lc-field-value">${group.acompanante}</span>
+        </div>` : ''}
       </div>
     `;
     return card;
@@ -107,6 +112,24 @@ export function initRecords(multiselect, quickVisits) {
       return;
     }
 
+    // FA-PT-0002 (Alcance): toda visita/personal externo debe ingresar
+    // acompañado por personal del área. Si ya hay al menos una persona del
+    // directorio en el mismo folio, ESA persona es quien acompaña — no se
+    // pide un campo aparte (ver quickvisits.js: requiereAcompanante). Solo
+    // cuando la visita entra sola se exige elegir/escribir un acompañante.
+    let { acompananteId, acompananteNombre, requiereAcompanante } = quickVisits.getAcompanante();
+    const acompananteBlock = document.getElementById('acompananteBlock');
+    if (requiereAcompanante && !acompananteId && !acompananteNombre) {
+      if (acompananteBlock) flashError(acompananteBlock);
+      showToast('Toda visita o personal externo debe ingresar acompañado por personal del área.');
+      return;
+    }
+    // Visita + al menos una persona del directorio en el mismo folio: esa
+    // persona queda registrada como acompañante automáticamente.
+    if (visitas.length > 0 && !requiereAcompanante && !acompananteId && !acompananteNombre) {
+      acompananteId = personas[0].id;
+    }
+
     const formData = Object.fromEntries(new FormData(form).entries());
     const horaEntrada = formData.horaEntrada || '';
 
@@ -123,6 +146,8 @@ export function initRecords(multiselect, quickVisits) {
       const resultado = await api.post('/api/accesos', {
         personas: personas.map(p => Number(p.id)),
         visitas,
+        acompananteId,
+        acompananteNombre,
         horaEntrada,
         motivo: formData.motivo
       });

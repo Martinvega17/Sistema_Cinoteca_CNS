@@ -14,7 +14,7 @@ async function handlePost(req, res) {
     res.status(400).json({ error: 'Usuario y contraseña son obligatorios.' });
     return;
   }
-  if (rol && !['usuario', 'administrador'].includes(rol)) {
+  if (rol && !['usuario', 'administrador', 'responsable_institucional'].includes(rol)) {
     res.status(400).json({ error: 'Rol inválido.' });
     return;
   }

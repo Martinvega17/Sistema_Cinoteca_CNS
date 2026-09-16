@@ -83,6 +83,27 @@ ALTER TABLE accesos DROP CONSTRAINT IF EXISTS chk_accesos_alguien;
 ALTER TABLE accesos ADD CONSTRAINT chk_accesos_alguien
   CHECK (persona_id IS NOT NULL OR visita_nombre IS NOT NULL);
 
+-- ---------------------------------------------------------------------------
+-- Acompañante — FA-PT-0002 (Alcance) exige que todo personal externo a
+-- almacenamiento y respaldos ingrese siempre acompañado por personal del
+-- área. `acompanante_id` referencia al directorio `personas`; si quien
+-- acompaña no está en el directorio, `acompanante_nombre` guarda su nombre
+-- a mano (mismo patrón que persona_id/visita_nombre arriba).
+-- ---------------------------------------------------------------------------
+ALTER TABLE accesos ADD COLUMN IF NOT EXISTS acompanante_id INTEGER REFERENCES personas(id);
+ALTER TABLE accesos ADD COLUMN IF NOT EXISTS acompanante_nombre TEXT;
+
+-- El acompañante solo es obligatorio cuando el renglón es de una visita o
+-- personal externo (persona_id NULL); el personal fijo del área que entra
+-- por su cuenta no necesita acompañante.
+ALTER TABLE accesos DROP CONSTRAINT IF EXISTS chk_accesos_acompanante_visita;
+ALTER TABLE accesos ADD CONSTRAINT chk_accesos_acompanante_visita
+  CHECK (
+    persona_id IS NOT NULL
+    OR acompanante_id IS NOT NULL
+    OR acompanante_nombre IS NOT NULL
+  );
+
 CREATE INDEX IF NOT EXISTS idx_accesos_fecha ON accesos (fecha);
 CREATE INDEX IF NOT EXISTS idx_accesos_persona ON accesos (persona_id);
 CREATE INDEX IF NOT EXISTS idx_accesos_folio_grupo ON accesos (folio_grupo);
@@ -101,11 +122,18 @@ CREATE TABLE IF NOT EXISTS usuarios (
   id            SERIAL PRIMARY KEY,
   usuario       TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  rol           TEXT NOT NULL DEFAULT 'usuario' CHECK (rol IN ('usuario', 'administrador')),
+  rol           TEXT NOT NULL DEFAULT 'usuario' CHECK (rol IN ('usuario', 'administrador', 'responsable_institucional')),
   activo        BOOLEAN NOT NULL DEFAULT true,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Upgrade path para bases de datos creadas antes de que existiera el rol
+-- "responsable_institucional" (única cuenta autorizada para ejecutar el
+-- borrado masivo de la bitácora completa — ver sección "Borrado" abajo).
+ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check;
+ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_check
+  CHECK (rol IN ('usuario', 'administrador', 'responsable_institucional'));
 
 DROP TRIGGER IF EXISTS trg_usuarios_updated_at ON usuarios;
 CREATE TRIGGER trg_usuarios_updated_at
@@ -126,3 +154,25 @@ CREATE TABLE IF NOT EXISTS auditoria (
 
 CREATE INDEX IF NOT EXISTS idx_auditoria_fecha ON auditoria (fecha DESC);
 CREATE INDEX IF NOT EXISTS idx_auditoria_usuario ON auditoria (usuario_id);
+
+-- ---------------------------------------------------------------------------
+-- respaldos_eliminacion — copia automática de los renglones de `accesos`
+-- justo antes de cualquier borrado masivo ("Limpiar registros de hoy" o
+-- "Borrar todo el historial"). Tabla de SOLO ESCRITURA desde la aplicación:
+-- no existe ningún endpoint que borre o modifique sus renglones, por lo que
+-- funciona como respaldo mínimo independiente de la tabla que se borra,
+-- incluso si el respaldo externo periódico (exportación JSON/CSV) no se
+-- generó ese día. No sustituye la política de retención de 12 meses ni los
+-- respaldos externos — es una última red de seguridad dentro de la misma
+-- base de datos.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS respaldos_eliminacion (
+  id                 SERIAL PRIMARY KEY,
+  tipo               TEXT NOT NULL,           -- 'limpiar_hoy' | 'borrar_todo'
+  usuario_id         INTEGER REFERENCES usuarios(id),   -- quien solicitó el borrado
+  segundo_usuario_id INTEGER REFERENCES usuarios(id),   -- quien autorizó (solo 'borrar_todo')
+  registros          JSONB NOT NULL,          -- snapshot completo de los renglones eliminados
+  fecha              TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_respaldos_eliminacion_fecha ON respaldos_eliminacion (fecha DESC);

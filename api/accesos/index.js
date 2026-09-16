@@ -1,8 +1,13 @@
-import { query } from '../_db.js';
-import { requireAuth, logAudit } from '../_auth.js';
+import { query, getClient } from '../_db.js';
+import { requireAuth, logAudit, verifyPassword } from '../_auth.js';
 import { isWithinMargin, todayYMD } from '../../src/js/core/validation.js';
 
 const ENTRY_MARGIN_MINUTES = 3;
+
+// Roles que pueden ejecutar CUALQUIER borrado sobre `accesos`. Dentro de
+// handleDelete se aplica una restricción adicional: "borrar todo" solo la
+// puede ejecutar "responsable_institucional" (ver esa función).
+const ROLES_BORRADO = ['administrador', 'responsable_institucional'];
 
 function pad(n) { return String(n).padStart(3, '0'); }
 
@@ -23,9 +28,12 @@ async function handleGet(req, res) {
             a.persona_id,
             COALESCE(p.nombre, a.visita_nombre) AS nombre,
             COALESCE(p.puesto, a.visita_puesto, 'Visita') AS puesto,
-            (a.persona_id IS NULL) AS es_visita_suelta
+            (a.persona_id IS NULL) AS es_visita_suelta,
+            a.acompanante_id,
+            COALESCE(ac.nombre, a.acompanante_nombre) AS acompanante
      FROM accesos a
      LEFT JOIN personas p ON p.id = a.persona_id
+     LEFT JOIN personas ac ON ac.id = a.acompanante_id
      ${where}
      ORDER BY a.fecha DESC, a.hora_entrada DESC, a.id DESC
      LIMIT 500`,
@@ -35,7 +43,10 @@ async function handleGet(req, res) {
 }
 
 async function handlePost(req, res) {
-  const { personas, visitas, horaEntrada, motivo } = req.body || {};
+  const {
+    personas, visitas, horaEntrada, motivo,
+    acompananteId, acompananteNombre
+  } = req.body || {};
 
   const listaPersonas = Array.isArray(personas) ? personas : [];
   // `visitas`: personas externas/ocasionales capturadas al vuelo, que NO se
@@ -62,6 +73,26 @@ async function handlePost(req, res) {
     return;
   }
 
+  // FA-PT-0002 (Alcance): todo personal externo o de otra área debe ingresar
+  // acompañado por personal de almacenamiento y respaldos. Si en el mismo
+  // folio ya viene al menos una persona del directorio, ESA persona cuenta
+  // como acompañante y se usa automáticamente (no se le vuelve a pedir al
+  // usuario — ver records.js). El acompañante explícito solo es
+  // obligatorio cuando la visita entra sola, sin nadie del directorio en
+  // el mismo folio.
+  let acompananteIdNum = acompananteId ? Number(acompananteId) : null;
+  const acompananteNombreLimpio = (acompananteNombre || '').trim() || null;
+  if (listaVisitas.length > 0 && !acompananteIdNum && !acompananteNombreLimpio) {
+    if (listaPersonas.length > 0) {
+      acompananteIdNum = Number(listaPersonas[0]);
+    } else {
+      res.status(400).json({
+        error: 'Toda visita o personal externo debe ingresar acompañado por personal del área. Selecciona o captura quién la acompaña.'
+      });
+      return;
+    }
+  }
+
   const { rows: folioRows } = await query("SELECT nextval('folio_seq') AS n");
   const folioGrupo = pad(folioRows[0].n);
 
@@ -77,7 +108,7 @@ async function handlePost(req, res) {
     const { rows } = await query(
       `INSERT INTO accesos (folio_grupo, persona_id, fecha, hora_entrada, motivo, registrado_por)
        VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, visita_nombre, visita_puesto`,
+       RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, visita_nombre, visita_puesto, acompanante_id, acompanante_nombre`,
       [folioGrupo, personaId, fecha, horaEntrada, motivo, req.user.sub]
     );
     inserted.push(rows[0]);
@@ -85,10 +116,10 @@ async function handlePost(req, res) {
 
   for (const visita of listaVisitas) {
     const { rows } = await query(
-      `INSERT INTO accesos (folio_grupo, persona_id, visita_nombre, visita_puesto, fecha, hora_entrada, motivo, registrado_por)
-       VALUES ($1, NULL, $2, $3, $4, $5, $6, $7)
-       RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, visita_nombre, visita_puesto`,
-      [folioGrupo, visita.nombre, visita.puesto || null, fecha, horaEntrada, motivo, req.user.sub]
+      `INSERT INTO accesos (folio_grupo, persona_id, visita_nombre, visita_puesto, acompanante_id, acompanante_nombre, fecha, hora_entrada, motivo, registrado_por)
+       VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, visita_nombre, visita_puesto, acompanante_id, acompanante_nombre`,
+      [folioGrupo, visita.nombre, visita.puesto || null, acompananteIdNum, acompananteIdNum ? null : acompananteNombreLimpio, fecha, horaEntrada, motivo, req.user.sub]
     );
     inserted.push(rows[0]);
   }
@@ -96,6 +127,8 @@ async function handlePost(req, res) {
   await logAudit(req.user.sub, 'accesos.entrada', `folio:${folioGrupo}`, {
     personas: listaPersonas,
     visitas: listaVisitas,
+    acompananteId: acompananteIdNum,
+    acompananteNombre: acompananteNombreLimpio,
     horaEntrada,
     motivo
   });
@@ -103,30 +136,138 @@ async function handlePost(req, res) {
   res.status(201).json({ folio_grupo: folioGrupo, registros: inserted });
 }
 
-// Borra TODOS los accesos de hoy y reinicia el folio a 001. Es para poder
-// limpiar registros de prueba sin dejar basura en la base de datos — no
-// borra nada de días anteriores. Solo administrador.
+// ---------------------------------------------------------------------------
+// Verifica la segunda autorización requerida para "Borrar todo el
+// historial": debe ser una cuenta activa, con rol Administrador o
+// Responsable institucional, DISTINTA de quien solicita la acción, y con
+// contraseña correcta. Es un control de doble autorización (cuatro ojos),
+// no una simple confirmación de interfaz.
+// ---------------------------------------------------------------------------
+async function verificarSegundoResponsable(usuarioIdSolicitante, segundoUsuario, segundoPassword) {
+  if (!segundoUsuario || !segundoPassword) {
+    return { ok: false, error: 'Se requiere usuario y contraseña de un segundo responsable para autorizar esta acción.' };
+  }
+
+  const { rows } = await query(
+    `SELECT id, password_hash, rol, activo FROM usuarios WHERE usuario = $1`,
+    [segundoUsuario]
+  );
+  const cuenta = rows[0];
+
+  if (!cuenta || !cuenta.activo) {
+    return { ok: false, error: 'El segundo responsable no existe o está inactivo.' };
+  }
+  if (cuenta.id === usuarioIdSolicitante) {
+    return { ok: false, error: 'El segundo responsable debe ser una cuenta distinta a la que solicita la acción (doble autorización).' };
+  }
+  if (!['administrador', 'responsable_institucional'].includes(cuenta.rol)) {
+    return { ok: false, error: 'El segundo responsable debe tener rol de Administrador o Responsable institucional.' };
+  }
+  const passwordOk = await verifyPassword(segundoPassword, cuenta.password_hash);
+  if (!passwordOk) {
+    return { ok: false, error: 'La contraseña del segundo responsable es incorrecta.' };
+  }
+
+  return { ok: true, id: cuenta.id };
+}
+
+// Ejecuta, dentro de UNA transacción, el respaldo (snapshot completo en
+// `respaldos_eliminacion`) y el borrado, para que nunca pueda perderse el
+// respaldo por un borrado exitoso ni quedar un respaldo huérfano de un
+// borrado que falló.
+async function respaldarYBorrar({ tipo, whereSql, whereParams, usuarioId, segundoUsuarioId }) {
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    const { rows: registros } = await client.query(
+      `SELECT * FROM accesos ${whereSql} ORDER BY id`,
+      whereParams
+    );
+
+    await client.query(
+      `INSERT INTO respaldos_eliminacion (tipo, usuario_id, segundo_usuario_id, registros)
+       VALUES ($1, $2, $3, $4)`,
+      [tipo, usuarioId, segundoUsuarioId || null, JSON.stringify(registros)]
+    );
+
+    const { rowCount } = await client.query(`DELETE FROM accesos ${whereSql}`, whereParams);
+    await client.query("ALTER SEQUENCE folio_seq RESTART WITH 1");
+
+    await client.query('COMMIT');
+    return rowCount;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 async function handleDelete(req, res) {
-  if (req.user.rol !== 'administrador') {
-    res.status(403).json({ error: 'Esta acción requiere rol de administrador.' });
+  if (!ROLES_BORRADO.includes(req.user.rol)) {
+    res.status(403).json({ error: 'Esta acción requiere rol de administrador o responsable institucional.' });
     return;
   }
 
   const borrarTodo = req.query.todo === 'true';
 
+  // -------------------------------------------------------------------
+  // Borrar TODO el historial: la operación más destructiva del sistema.
+  // Controles exigidos (FA-PT-0002 §8 y Manual de Administrador §3.6):
+  //   1. Solo el rol "responsable_institucional" puede solicitarla — un
+  //      Administrador ya NO puede ejecutarla por sí solo.
+  //   2. Doble autorización: una segunda cuenta (Administrador o
+  //      Responsable institucional, distinta de quien la solicita) debe
+  //      confirmar con su propio usuario y contraseña.
+  //   3. Respaldo automático e íntegro de los renglones afectados en
+  //      `respaldos_eliminacion` (tabla de solo escritura) ANTES de borrar,
+  //      dentro de la misma transacción.
+  // -------------------------------------------------------------------
   if (borrarTodo) {
-    const { rowCount } = await query('DELETE FROM accesos');
-    await query("ALTER SEQUENCE folio_seq RESTART WITH 1");
+    if (req.user.rol !== 'responsable_institucional') {
+      res.status(403).json({
+        error: 'Borrar TODO el historial requiere el rol "Responsable institucional". Un Administrador no puede ejecutar esta acción por sí solo.'
+      });
+      return;
+    }
 
-    await logAudit(req.user.sub, 'accesos.borrar_todo', 'accesos:*', { eliminados: rowCount });
+    const { segundoUsuario, segundoPassword } = req.body || {};
+    const verificacion = await verificarSegundoResponsable(req.user.sub, segundoUsuario, segundoPassword);
+    if (!verificacion.ok) {
+      res.status(403).json({ error: verificacion.error });
+      return;
+    }
+
+    const rowCount = await respaldarYBorrar({
+      tipo: 'borrar_todo',
+      whereSql: '',
+      whereParams: [],
+      usuarioId: req.user.sub,
+      segundoUsuarioId: verificacion.id
+    });
+
+    await logAudit(req.user.sub, 'accesos.borrar_todo', 'accesos:*', {
+      eliminados: rowCount,
+      autorizadoPor: verificacion.id
+    });
 
     res.status(200).json({ eliminados: rowCount, todo: true });
     return;
   }
 
+  // -------------------------------------------------------------------
+  // Limpiar registros de hoy: menor riesgo (solo el día en curso, pensado
+  // para depurar pruebas), pero igual queda respaldada automáticamente
+  // antes de borrarse.
+  // -------------------------------------------------------------------
   const fecha = todayYMD();
-  const { rowCount } = await query('DELETE FROM accesos WHERE fecha = $1', [fecha]);
-  await query("ALTER SEQUENCE folio_seq RESTART WITH 1");
+  const rowCount = await respaldarYBorrar({
+    tipo: 'limpiar_hoy',
+    whereSql: 'WHERE fecha = $1',
+    whereParams: [fecha],
+    usuarioId: req.user.sub
+  });
 
   await logAudit(req.user.sub, 'accesos.limpiar_hoy', `fecha:${fecha}`, { eliminados: rowCount });
 

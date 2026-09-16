@@ -14,8 +14,11 @@ const COOKIE_NAME = 'cinoteca_session';
 const SESSION_SECONDS_ADMIN = 8 * 60 * 60;
 const SESSION_SECONDS_USUARIO = 60 * 60 * 24 * 365 * 5;
 
+// "responsable_institucional" es una cuenta de alto privilegio (autoriza el
+// borrado masivo de la bitácora): se cierra sola a las 8h igual que un
+// Administrador, en vez de quedar abierta indefinidamente.
 function sessionSeconds(rol) {
-  return rol === 'administrador' ? SESSION_SECONDS_ADMIN : SESSION_SECONDS_USUARIO;
+  return rol === 'usuario' ? SESSION_SECONDS_USUARIO : SESSION_SECONDS_ADMIN;
 }
 
 function getSecret() {
@@ -116,10 +119,27 @@ export function requireAuth(handler) {
   });
 }
 
+// "responsable_institucional" incluye todos los privilegios de
+// "administrador" (gestión de personal/usuarios/auditoría), más la
+// autorización de borrado masivo — por eso ambos roles pasan requireAdmin.
 export function requireAdmin(handler) {
   return requireAuth(async (req, res) => {
-    if (req.user.rol !== 'administrador') {
+    if (!['administrador', 'responsable_institucional'].includes(req.user.rol)) {
       res.status(403).json({ error: 'Esta acción requiere rol de administrador.' });
+      return;
+    }
+    return handler(req, res);
+  });
+}
+
+// Wrapper genérico para endpoints con una lista explícita de roles
+// permitidos (usado por api/accesos/index.js para el borrado masivo, donde
+// "administrador" y "responsable_institucional" NO tienen los mismos
+// permisos).
+export function requireRole(...roles) {
+  return (handler) => requireAuth(async (req, res) => {
+    if (!roles.includes(req.user.rol)) {
+      res.status(403).json({ error: `Esta acción requiere rol: ${roles.join(' o ')}.` });
       return;
     }
     return handler(req, res);

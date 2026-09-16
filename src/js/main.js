@@ -18,12 +18,18 @@ async function start(session) {
   if (started) return; // evita inicializar dos veces si hay un doble login
   started = true;
 
-  const multiselect = await initMultiselect();
+  // quickVisits se crea primero para poder pasarle a initMultiselect un
+  // callback: cada vez que cambia la selección de "Personas que ingresan",
+  // quickVisits sabe cuántas hay y decide si todavía hace falta pedir
+  // "Acompañado por" a mano (ver quickvisits.js).
   const quickVisits = initQuickVisits();
+  const multiselect = await initMultiselect((seleccionadas) => {
+    quickVisits.actualizarPersonasSeleccionadas(seleccionadas.length);
+  });
   const records = initRecords(multiselect, quickVisits);
   const reportes = initReportes();
 
-  if (session.rol === 'administrador') {
+  if (session.rol === 'administrador' || session.rol === 'responsable_institucional') {
     initPersonalAdmin();
     initAdminPanel({
       onLimpiarHoy: () => {

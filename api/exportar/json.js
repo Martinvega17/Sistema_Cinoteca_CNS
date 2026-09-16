@@ -19,8 +19,11 @@ async function handler(req, res) {
   const { rows } = await query(
     `SELECT a.id, a.folio_grupo, a.fecha, a.hora_entrada, a.hora_salida, a.motivo,
             COALESCE(p.nombre, a.visita_nombre) AS nombre,
-            COALESCE(p.puesto, a.visita_puesto, 'Visita') AS puesto
-     FROM accesos a LEFT JOIN personas p ON p.id = a.persona_id
+            COALESCE(p.puesto, a.visita_puesto, 'Visita') AS puesto,
+            COALESCE(ac.nombre, a.acompanante_nombre) AS acompanante
+     FROM accesos a
+     LEFT JOIN personas p ON p.id = a.persona_id
+     LEFT JOIN personas ac ON ac.id = a.acompanante_id
      ${where}
      ORDER BY a.fecha DESC, a.hora_entrada DESC`,
     params

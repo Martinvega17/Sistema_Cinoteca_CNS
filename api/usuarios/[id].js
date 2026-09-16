@@ -18,7 +18,7 @@ async function handler(req, res) {
   }
 
   const nuevoHash = password ? await hashPassword(password) : actual.password_hash;
-  const nuevoRol = rol && ['usuario', 'administrador'].includes(rol) ? rol : actual.rol;
+  const nuevoRol = rol && ['usuario', 'administrador', 'responsable_institucional'].includes(rol) ? rol : actual.rol;
   const nuevoActivo = typeof activo === 'boolean' ? activo : actual.activo;
 
   const { rows } = await query(
