@@ -54,7 +54,7 @@ async function handleGet(req, res) {
 async function handlePost(req, res) {
   const {
     personas, visitas, horaEntrada, motivo,
-    acompananteId, acompananteNombre, firma
+    acompananteId, acompananteNombre, firmas
   } = req.body || {};
 
   const listaPersonas = Array.isArray(personas) ? personas : [];
@@ -75,8 +75,17 @@ async function handlePost(req, res) {
     res.status(400).json({ error: 'El motivo de acceso es obligatorio.' });
     return;
   }
-  if (!esFirmaValida(firma)) {
-    res.status(400).json({ error: 'Debes registrar la firma digital para poder guardar la entrada.' });
+
+  // Firma digital obligatoria de CADA persona/visita: debe llegar
+  // exactamente una firma por cada renglón que se va a insertar, EN EL
+  // MISMO ORDEN en que se insertan abajo (primero `listaPersonas`, luego
+  // `listaVisitas`) — ese orden lo arma el frontend en records.js. Antes
+  // se guardaba una sola firma compartida para todo el folio; ahora cada
+  // persona firma su propio renglón, igual que ya pasaba con la salida.
+  const listaFirmas = Array.isArray(firmas) ? firmas : [];
+  const totalEntrantes = listaPersonas.length + listaVisitas.length;
+  if (listaFirmas.length !== totalEntrantes || !listaFirmas.every(esFirmaValida)) {
+    res.status(400).json({ error: 'Debes registrar la firma digital de cada persona que ingresa para poder guardar la entrada.' });
     return;
   }
   if (!isWithinMargin(horaEntrada, ENTRY_MARGIN_MINUTES)) {
@@ -116,28 +125,28 @@ async function handlePost(req, res) {
   // medianoche en México.
   const fecha = todayYMD();
 
-  // La misma firma capturada una sola vez en el formulario se guarda en
-  // cada renglón del folio (uno por persona) — todas las personas que
-  // entran juntas quedan cubiertas por la firma de quien registró el
-  // acceso, igual que pasaría con una firma de tinta en una bitácora
-  // física compartida.
+  // Cada persona/visita trae su propia firma, en el mismo orden en que se
+  // insertan aquí (primero personas, luego visitas) — ver validación arriba.
   const inserted = [];
+  let firmaIdx = 0;
   for (const personaId of listaPersonas) {
+    const firmaPersona = listaFirmas[firmaIdx++];
     const { rows } = await query(
       `INSERT INTO accesos (folio_grupo, persona_id, fecha, hora_entrada, motivo, registrado_por, firma_entrada, firma_entrada_fecha)
        VALUES ($1, $2, $3, $4, $5, $6, $7, now())
        RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, visita_nombre, visita_puesto, acompanante_id, acompanante_nombre, firma_entrada, firma_entrada_fecha`,
-      [folioGrupo, personaId, fecha, horaEntrada, motivo, req.user.sub, firma]
+      [folioGrupo, personaId, fecha, horaEntrada, motivo, req.user.sub, firmaPersona]
     );
     inserted.push(rows[0]);
   }
 
   for (const visita of listaVisitas) {
+    const firmaVisita = listaFirmas[firmaIdx++];
     const { rows } = await query(
       `INSERT INTO accesos (folio_grupo, persona_id, visita_nombre, visita_puesto, acompanante_id, acompanante_nombre, fecha, hora_entrada, motivo, registrado_por, firma_entrada, firma_entrada_fecha)
        VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, $8, $9, $10, now())
        RETURNING id, folio_grupo, fecha, hora_entrada, hora_salida, motivo, persona_id, visita_nombre, visita_puesto, acompanante_id, acompanante_nombre, firma_entrada, firma_entrada_fecha`,
-      [folioGrupo, visita.nombre, visita.puesto || null, acompananteIdNum, acompananteIdNum ? null : acompananteNombreLimpio, fecha, horaEntrada, motivo, req.user.sub, firma]
+      [folioGrupo, visita.nombre, visita.puesto || null, acompananteIdNum, acompananteIdNum ? null : acompananteNombreLimpio, fecha, horaEntrada, motivo, req.user.sub, firmaVisita]
     );
     inserted.push(rows[0]);
   }
@@ -148,7 +157,8 @@ async function handlePost(req, res) {
     acompananteId: acompananteIdNum,
     acompananteNombre: acompananteNombreLimpio,
     horaEntrada,
-    motivo
+    motivo,
+    firmasCapturadas: listaFirmas.length
   });
 
   res.status(201).json({ folio_grupo: folioGrupo, registros: inserted });

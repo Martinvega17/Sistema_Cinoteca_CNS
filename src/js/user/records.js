@@ -169,16 +169,26 @@ export function initRecords(multiselect, quickVisits) {
       return;
     }
 
-    // Firma digital obligatoria antes de guardar la entrada. Se pide justo
-    // aquí (ya validado todo lo demás) para no hacer firmar a alguien y
-    // luego rechazar el registro por otro motivo.
-    const firma = await pedirFirma({
-      titulo: 'Firma de entrada',
-      subtitulo: 'Firma para confirmar el registro de entrada a la cintoteca.'
-    });
-    if (!firma) {
-      showToast('Debes registrar tu firma digital para guardar la entrada.');
-      return;
+    // Firma digital obligatoria de CADA persona/visita que entra — una por
+    // una, en el mismo orden en que el backend las va a insertar (primero
+    // `personas`, luego `visitas`). Si alguien cancela su firma, se aborta
+    // TODO el registro: nadie queda registrado a medias sin firmar.
+    const entrantes = [
+      ...personas.map(p => ({ nombre: `${p.nombre} · ${p.puesto}` })),
+      ...visitas.map(v => ({ nombre: v.puesto ? `${v.nombre} · ${v.puesto}` : v.nombre }))
+    ];
+
+    const firmas = [];
+    for (const entrante of entrantes) {
+      const firma = await pedirFirma({
+        titulo: 'Firma de entrada',
+        subtitulo: entrante.nombre
+      });
+      if (!firma) {
+        showToast('Registro cancelado: se requiere la firma digital de cada persona que ingresa.');
+        return;
+      }
+      firmas.push(firma);
     }
 
     try {
@@ -189,7 +199,7 @@ export function initRecords(multiselect, quickVisits) {
         acompananteNombre,
         horaEntrada,
         motivo: formData.motivo,
-        firma
+        firmas
       });
 
       const rows = resultado.registros.map(r => {
