@@ -1,5 +1,2 @@
-# Sistema Cinoteca CNS/IPICYT — herramienta interna con acceso por login.
-# No hay contenido público que indexar (todo está detrás de autenticación),
-# así que se bloquea el rastreo por completo en vez de listar rutas.
 User-agent: *
 Disallow: /

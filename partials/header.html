@@ -1,0 +1,33 @@
+      <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-6 flex-wrap">
+        <div class="flex items-center gap-4">
+          <img src="src/assets/logo-cns.webp" alt="CNS · Centro Nacional de Supercómputo" class="h-11 w-auto shrink-0">
+          <div>
+            <h1 class="font-display font-semibold text-[15px] leading-tight text-[var(--text-hi)]">
+              Instituto Potosino de Investigación Científica y Tecnológica
+            </h1>
+            <p class="text-[11px] font-mono text-[var(--text-mid)] letter-space mt-0.5">
+              CINTOTECA · SAN LUIS POTOSÍ, MÉX.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 sm:gap-6">
+          <div class="hidden sm:flex flex-col items-end">
+            <span class="font-mono text-[11px] text-[var(--text-dim)] letter-space">FECHA / HORA</span>
+            <span id="liveClock" class="font-mono text-sm text-[var(--text-hi)]">--:--:--</span>
+          </div>
+          <div class="h-8 w-px bg-[var(--line)] hidden sm:block"></div>
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--line)] bg-[#0F1822]">
+            <span class="pulse-dot"></span>
+            <span class="font-mono text-[11px] text-[var(--ok)] letter-space">SISTEMA ACTIVO</span>
+          </div>
+          <div class="h-8 w-px bg-[var(--line)] hidden sm:block"></div>
+          <div class="flex items-center gap-2">
+            <div class="text-right leading-tight">
+              <div class="text-[12px] text-[var(--text-hi)] font-semibold" id="sessionUsuario">—</div>
+              <div class="text-[10px] text-[var(--text-dim)] font-mono uppercase" id="sessionRol">—</div>
+            </div>
+            <button type="button" id="logoutBtn" class="btn-outline text-[11px] px-2.5 py-1.5">Salir</button>
+          </div>
+        </div>
+      </div>

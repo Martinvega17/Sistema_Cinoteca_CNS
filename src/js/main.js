@@ -1,3 +1,4 @@
+import { loadPartials } from './core/partials.js';
 import { initClock } from './core/clock.js';
 import { initAuth, wireLoginForm, wireLogoutButton } from './core/auth.js';
 import { initTabs } from './core/tabs.js';
@@ -7,6 +8,11 @@ import { initRecords } from './user/records.js';
 import { initReportes } from './user/reportes.js';
 import { initPersonalAdmin } from './admin/personal-admin.js';
 import { initAdminPanel } from './admin/admin.js';
+
+// Primero se inyecta el HTML de cada pestaña (ver partials.js) — recién
+// entonces existen en el DOM los elementos que el resto de este archivo
+// busca con document.getElementById.
+await loadPartials();
 
 initClock();
 initTabs();

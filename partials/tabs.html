@@ -1,0 +1,16 @@
+      <div class="flex items-end justify-between flex-wrap gap-3 mb-5">
+        <div>
+          <p class="font-mono text-[11px] text-[var(--accent)] letter-space mb-1">CONTROL DE ACCESO · CNS</p>
+          <h2 class="font-display text-2xl font-semibold text-[var(--text-hi)]">Bitácora de Acceso a Cintoteca</h2>
+        </div>
+        <p class="text-xs text-[var(--text-mid)] max-w-md leading-relaxed">
+          Registra la entrada al ingresar y cierra el acceso con "Registrar salida" cuando el personal se retire.
+        </p>
+      </div>
+
+      <nav class="tab-nav">
+        <button type="button" class="tab-btn active" data-tab="registrar">Registrar</button>
+        <button type="button" class="tab-btn" data-tab="registros">Registros</button>
+        <button type="button" class="tab-btn hidden" data-admin-only data-tab="personal">Personal</button>
+        <button type="button" class="tab-btn hidden" data-admin-only data-tab="admin">Admin</button>
+      </nav>

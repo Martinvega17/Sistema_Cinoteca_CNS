@@ -21,6 +21,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
+// Carga .env SOLO si el archivo existe. En local (npm run build / npm run
+// db:migrate sueltos, sin pasar por `npm run dev`) hace falta para que
+// DATABASE_URL esté disponible. En Vercel no hace falta —ni existe el
+// archivo—: las variables ya están inyectadas en process.env desde
+// Settings → Environment Variables. `process.loadEnvFile` (Node ≥20.12)
+// truena si el archivo no existe, así que va en un try/catch: eso es
+// justo la diferencia entre "cárgalo si está" y "requiérelo si o si".
+try {
+  process.loadEnvFile();
+} catch {
+  // Sin .env (caso normal en Vercel) — seguimos con lo que ya haya en
+  // process.env.
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function migrate() {

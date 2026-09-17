@@ -1,0 +1,19 @@
+    <div class="w-full max-w-sm panel rounded-xl p-8">
+      <div class="flex flex-col items-center text-center mb-6">
+        <img src="src/assets/logo-cns.webp" alt="CNS · Centro Nacional de Supercómputo" class="h-11 w-auto mb-4">
+        <h1 class="font-display text-base font-semibold text-[var(--text-hi)]">Sistema Cintoteca CNS</h1>
+        <p class="text-[11px] text-[var(--text-dim)] mt-1">Inicia sesión para continuar</p>
+      </div>
+      <form id="loginForm" class="space-y-4" onsubmit="return false">
+        <div>
+          <label class="field-label">Usuario</label>
+          <input required type="text" name="usuario" class="input-field" autocomplete="username">
+        </div>
+        <div>
+          <label class="field-label">Contraseña</label>
+          <input required type="password" name="password" class="input-field" autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-primary w-full py-2.5 mt-2 text-sm">Iniciar sesión</button>
+        <p id="loginError" class="hidden text-[11px] text-[var(--danger)] text-center pt-1"></p>
+      </form>
+    </div>

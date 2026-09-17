@@ -1,13 +1,21 @@
 import { api } from './api.js';
 
-const loginScreen = document.getElementById('loginScreen');
-const appShell = document.getElementById('appShell');
-const loginForm = document.getElementById('loginForm');
-const loginError = document.getElementById('loginError');
+// OJO: estos elementos NO se buscan aquí arriba (nivel de módulo) como
+// antes — desde que el login y el header viven en partials/ (ver
+// partials.js), auth.js se importa e inicializa ANTES de que
+// loadPartials() inyecte ese HTML. Un `const x = document.getElementById(...)`
+// a nivel de módulo se ejecuta en cuanto se importa el archivo y se queda
+// con `null` para siempre, aunque el elemento aparezca después — por eso
+// cada función busca el suyo en el momento en que realmente se necesita
+// (ya con los partials cargados).
+function elLoginScreen() { return document.getElementById('loginScreen'); }
+function elAppShell() { return document.getElementById('appShell'); }
+function elLoginForm() { return document.getElementById('loginForm'); }
+function elLoginError() { return document.getElementById('loginError'); }
 
 function showApp(session) {
-  loginScreen.classList.add('hidden');
-  appShell.classList.remove('hidden');
+  elLoginScreen().classList.add('hidden');
+  elAppShell().classList.remove('hidden');
   const ETIQUETAS_ROL = {
     administrador: 'Administrador',
     responsable_institucional: 'Responsable institucional',
@@ -35,8 +43,8 @@ function showApp(session) {
 }
 
 function showLogin() {
-  appShell.classList.add('hidden');
-  loginScreen.classList.remove('hidden');
+  elAppShell().classList.add('hidden');
+  elLoginScreen().classList.remove('hidden');
 }
 
 /** Revisa si ya hay una sesión activa (cookie válida) al cargar la página. */
@@ -53,6 +61,8 @@ export async function initAuth() {
 
 /** Conecta el formulario de login; `onSuccess` recibe la sesión ya iniciada. */
 export function wireLoginForm(onSuccess) {
+  const loginForm = elLoginForm();
+  const loginError = elLoginError();
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     loginError.classList.add('hidden');

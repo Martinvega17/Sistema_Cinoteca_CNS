@@ -1,0 +1,42 @@
+        <section class="panel rounded-xl p-6 mb-6">
+          <h3 class="font-display text-sm font-semibold text-[var(--text-hi)] letter-space uppercase mb-4">Agregar persona</h3>
+          <form id="personalForm" class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+            <div>
+              <label class="field-label">Nombre</label>
+              <input required type="text" name="nombre" class="input-field">
+            </div>
+            <div>
+              <label class="field-label">Área</label>
+              <input type="text" name="area" class="input-field">
+            </div>
+            <div>
+              <label class="field-label">Puesto</label>
+              <input required type="text" name="puesto" class="input-field">
+            </div>
+            <button type="submit" class="btn-primary py-2.5 text-sm">+ Agregar persona</button>
+          </form>
+        </section>
+
+        <section class="panel rounded-xl overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--line)] flex-wrap gap-3">
+            <h3 class="font-display text-sm font-semibold text-[var(--text-hi)] letter-space uppercase">Directorio de personal</h3>
+            <label class="flex items-center gap-2 text-[11px] text-[var(--text-dim)]">
+              <input type="checkbox" id="personalMostrarInactivos" class="accent-[var(--accent)]">
+              Mostrar dados de baja
+            </label>
+          </div>
+          <div class="overflow-x-auto scroll-thin">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Área</th>
+                  <th>Puesto</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="personalBody"></tbody>
+            </table>
+          </div>
+        </section>

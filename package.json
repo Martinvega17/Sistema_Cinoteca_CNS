@@ -7,10 +7,10 @@
   "scripts": {
     "build": "npm run build:css && npm run db:migrate && mkdir -p dist && cp index.html dist/",
     "build:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/css/input.css -o ./css/output.css --minify",
-    "watch:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/css/input.css -o ./dist/css/output.css --watch",
+    "watch:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/css/input.css -o ./css/output.css --watch",
     "dev": "node --env-file=.env scripts/dev-server.js",
     "db:migrate": "node scripts/migrate.js",
-    "db:create-admin": "node --env-file=.env ./js/scripts/create-admin.js"
+    "db:create-admin": "node --env-file=.env scripts/create-admin.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

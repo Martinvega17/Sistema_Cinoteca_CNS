@@ -1,0 +1,97 @@
+        <!-- FORMULARIO DE REGISTRO -->
+        <section class="lg:col-span-2 panel rounded-xl p-6 h-fit">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="font-display text-sm font-semibold text-[var(--text-hi)] letter-space uppercase">Registrar entrada</h3>
+          </div>
+
+          <form id="accessForm" class="space-y-4">
+            <div>
+              <label class="field-label">Personas que ingresan</label>
+              <div class="multiselect" id="peopleSelect">
+                <button type="button" class="ms-trigger" id="msTrigger">
+                  <span id="msTriggerLabel" class="ms-placeholder">Selecciona una o varias personas</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-[var(--text-dim)] shrink-0"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="ms-panel hidden" id="msPanel">
+                  <!-- Las opciones de personal se cargan desde GET /api/personas -->
+                </div>
+              </div>
+              <div id="msChips" class="flex flex-wrap gap-1.5 mt-2"></div>
+            </div>
+
+            <div>
+              <label class="field-label">Visita o personal externo (opcional)</label>
+              <div class="ms-add-row">
+                <input type="text" id="qvNombre" placeholder="Nombre completo de la visita">
+                <input type="text" id="qvPuesto" placeholder="Motivo / procedencia (opcional)">
+              </div>
+              <button type="button" class="btn-primary w-full py-2.5 mt-2 text-sm" id="qvAddBtn">+ Agregar</button>
+              <div id="qvChips" class="flex flex-wrap gap-1.5 mt-2"></div>
+              <p class="text-[10px] text-[var(--text-dim)] mt-1">Para alguien que entra una sola vez. Queda en la bitácora de accesos, pero NO se guarda en el directorio de personal.</p>
+            </div>
+
+            <div id="acompananteBlock" class="hidden">
+              <label class="field-label">Acompañado por (personal del área)</label>
+              <select id="acompananteSelect" class="input-field">
+                <option value="" disabled selected>Selecciona quién acompaña</option>
+              </select>
+              <input type="text" id="acompananteNombre" class="input-field mt-2" placeholder="O escribe el nombre si no está en el directorio">
+              <p class="text-[10px] text-[var(--text-dim)] mt-1">Obligatorio: todo personal externo o de otra área debe ingresar acompañado por personal de almacenamiento y respaldos (FA-PT-0002).</p>
+            </div>
+
+            <div>
+              <label class="field-label">Hora de entrada</label>
+              <input required type="time" name="horaEntrada" class="input-field font-mono">
+              <p class="text-[10px] text-[var(--text-dim)] mt-1">Debe estar dentro de ±3 minutos de la hora actual del sistema.</p>
+            </div>
+
+            <div>
+              <label class="field-label">Motivo de acceso</label>
+              <select required name="motivo" class="input-field">
+                <option value="" disabled selected>Selecciona un motivo</option>
+                <option>Retiro de cintas</option>
+                <option>Acomodo de cintas</option>
+                <option>Auditoría / verificación</option>
+                <option>Capacitación</option>
+                <option>Otro</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn-primary w-full py-2.5 mt-2 text-sm">
+              Registrar entrada
+            </button>
+
+            <p class="text-[10.5px] text-[var(--text-dim)] leading-relaxed pt-1">
+              El folio se asigna automáticamente al guardar. Al enviar el formulario se pedirá firmar digitalmente (desde celular, PC o tablet) antes de guardar el registro. Para cerrar un acceso, usa "Registrar salida" en la persona correspondiente, lo que también pedirá firma.
+            </p>
+          </form>
+        </section>
+
+        <!-- BITÁCORA DEL DÍA -->
+        <section class="lg:col-span-3 panel rounded-xl overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--line)] flex-wrap gap-3">
+            <h3 class="font-display text-sm font-semibold text-[var(--text-hi)] letter-space uppercase">Registros de hoy</h3>
+            <div class="flex items-center gap-3">
+              <span class="font-mono text-[11px] text-[var(--text-dim)]" id="recordCount">0 registros</span>
+              <button type="button" id="exportPdfBtn" data-admin-only class="btn-export flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 hidden">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+                Exportar PDF (con firmas)
+              </button>
+              <button type="button" id="exportBtn" data-admin-only class="btn-export flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 hidden">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+                Exportar hoy (JSON)
+              </button>
+            </div>
+          </div>
+
+          <div id="logList" class="flex-1 overflow-y-auto scroll-thin" style="max-height:640px;">
+            <!-- Las tarjetas de registro se insertan dinámicamente vía JS -->
+          </div>
+
+          <div id="emptyState" class="flex-1 flex flex-col items-center justify-center py-14 text-center px-6">
+            <div class="w-10 h-10 rounded-full border border-[var(--line)] flex items-center justify-center mb-3">
+              <span class="text-[var(--accent)] font-mono text-xs">--</span>
+            </div>
+            <p class="text-xs text-[var(--text-dim)]">Aún no hay registros capturados hoy.</p>
+          </div>
+        </section>
