@@ -1,8 +1,13 @@
 /**
  * Firma digital en pantalla — modal con un <canvas> donde se puede firmar
- * con el dedo (celular/tablet), con mouse (PC) o con lápiz óptico. Usa
- * Pointer Events porque es el único API que cubre los tres casos con el
- * mismo código (a diferencia de mezclar mouseXXX + touchXXX a mano).
+ * con el dedo (celular/tablet), con mouse (PC) o con lápiz óptico.
+ *
+ * El trazo lo maneja la librería signature_pad (cargada desde CDN en
+ * index.html como `window.SignaturePad`, igual que jsPDF) en vez de un
+ * dibujo a mano sobre el canvas: da curvas suaves con ancho variable
+ * (en vez de una línea de grosor fijo) y ya trae resuelto lo fino de
+ * mouse+touch+lápiz óptico en un solo motor, probado en producción por
+ * mucha gente — más profesional que reinventarlo aquí.
  *
  * Uso:
  *   import { pedirFirma, verFirma } from '../core/signature-pad.js';
@@ -10,7 +15,8 @@
  *   if (!firma) { // la persona canceló, no continuar
  *
  * `firma` es un data URL PNG ("data:image/png;base64,...") listo para
- * guardarse tal cual en la base de datos y para insertarse en un PDF.
+ * guardarse tal cual en la base de datos y para insertarse en un PDF —
+ * exactamente igual que antes, no cambia nada para quien use este módulo.
  */
 
 let overlayActual = null;
@@ -70,96 +76,52 @@ export function pedirFirma({ titulo = 'Firma digital', subtitulo = '' } = {}) {
     const canvas = overlay.querySelector('.sig-canvas');
     const placeholder = overlay.querySelector('.sig-canvas-placeholder');
     const errorMsg = overlay.querySelector('#sigError');
-    const ctx = canvas.getContext('2d');
 
-    let dibujando = false;
-    let tieneTrazo = false;
-    let lastX = 0;
-    let lastY = 0;
+    if (!window.SignaturePad) {
+      // No debería pasar en producción (el <script> está en index.html),
+      // pero si el CDN no cargó, mejor avisar en consola que dejar el
+      // modal abierto sin poder firmar.
+      console.error('SignaturePad no está disponible (revisa el <script> de signature_pad en index.html).');
+      overlay.remove();
+      overlayActual = null;
+      resolve(null);
+      return;
+    }
 
-    // El canvas se dibuja en resolución real (devicePixelRatio) para que
-    // la firma no se vea pixelada en pantallas de alta densidad (la
-    // mayoría de los celulares/tablets), pero las coordenadas del mouse
-    // siguen siendo las del CSS — por eso se escala el contexto.
+    // Fondo transparente (igual que el canvas de antes): el PNG resultante
+    // debe poder colocarse sobre cualquier fondo (bitácora en PDF, vista
+    // de solo lectura) sin traer un rectángulo blanco propio. El blanco
+    // que se ve mientras se firma es el de `.sig-canvas-wrap` en CSS.
+    const signaturePad = new window.SignaturePad(canvas, {
+      minWidth: 1.2,
+      maxWidth: 2.6,
+      penColor: '#000000',
+      backgroundColor: 'rgba(0,0,0,0)'
+    });
+
+    // El canvas se redimensiona en resolución real (devicePixelRatio) para
+    // que la firma no se vea pixelada en pantallas de alta densidad (la
+    // mayoría de los celulares/tablets). Antes de cambiar el tamaño se
+    // guarda el trazo como datos vectoriales (signaturePad.toData()) y se
+    // vuelve a dibujar después — así no se pierde ni se ve borroso si la
+    // persona rota el dispositivo a medio firmar.
     function ajustarTamano() {
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-      // Antes de cambiar el tamaño, guardamos el trazo ya dibujado para
-      // no perderlo si el usuario rota el dispositivo a medio firmar.
-      const previo = tieneTrazo ? canvas.toDataURL('image/png') : null;
+      const datosPrevios = signaturePad.isEmpty() ? null : signaturePad.toData();
 
       canvas.width = Math.max(1, Math.round(rect.width * dpr));
       canvas.height = Math.max(1, Math.round(rect.height * dpr));
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.lineWidth = 2.4;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      // Negro sólido: la firma se guarda como PNG con fondo transparente y
-      // termina siempre sobre fondo blanco (bitácora en PDF, vista de solo
-      // lectura, impresión), así que el trazo debe ser oscuro para que se
-      // vea legible ahí — no del color de acento claro que se usa en la UI.
-      ctx.strokeStyle = '#000000';
+      canvas.getContext('2d').scale(dpr, dpr);
 
-      if (previo) {
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
-        img.src = previo;
-      }
+      signaturePad.clear();
+      if (datosPrevios) signaturePad.fromData(datosPrevios);
     }
 
-    function posDesdeEvento(e) {
-      const rect = canvas.getBoundingClientRect();
-      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    }
-
-    function empezarTrazo(e) {
-      canvas.setPointerCapture(e.pointerId);
-      dibujando = true;
-      tieneTrazo = true;
+    signaturePad.addEventListener('beginStroke', () => {
       placeholder.classList.add('hidden');
       errorMsg.classList.add('hidden');
-      const { x, y } = posDesdeEvento(e);
-      lastX = x;
-      lastY = y;
-      // Un solo punto (tap) también cuenta como marca de la firma.
-      ctx.beginPath();
-      ctx.arc(x, y, ctx.lineWidth / 2, 0, Math.PI * 2);
-      ctx.fillStyle = ctx.strokeStyle;
-      ctx.fill();
-    }
-
-    function seguirTrazo(e) {
-      if (!dibujando) return;
-      const { x, y } = posDesdeEvento(e);
-      ctx.beginPath();
-      ctx.moveTo(lastX, lastY);
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      lastX = x;
-      lastY = y;
-      e.preventDefault();
-    }
-
-    function terminarTrazo(e) {
-      if (!dibujando) return;
-      dibujando = false;
-      try { canvas.releasePointerCapture(e.pointerId); } catch { /* no-op */ }
-    }
-
-    function limpiar() {
-      const rect = canvas.getBoundingClientRect();
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      tieneTrazo = false;
-      placeholder.classList.remove('hidden');
-      errorMsg.classList.add('hidden');
-    }
-
-    canvas.style.touchAction = 'none'; // evita que el navegador haga scroll/zoom al firmar
-    canvas.addEventListener('pointerdown', empezarTrazo);
-    canvas.addEventListener('pointermove', seguirTrazo);
-    canvas.addEventListener('pointerup', terminarTrazo);
-    canvas.addEventListener('pointerleave', terminarTrazo);
-    canvas.addEventListener('pointercancel', terminarTrazo);
+    });
 
     window.addEventListener('resize', ajustarTamano);
     // Se ejecuta tras el primer paint para que getBoundingClientRect ya
@@ -168,19 +130,24 @@ export function pedirFirma({ titulo = 'Firma digital', subtitulo = '' } = {}) {
 
     function finalizar(valor) {
       window.removeEventListener('resize', ajustarTamano);
+      signaturePad.off();
       cerrarOverlay();
       resolve(valor);
     }
 
-    overlay.querySelector('#sigClear').addEventListener('click', limpiar);
+    overlay.querySelector('#sigClear').addEventListener('click', () => {
+      signaturePad.clear();
+      placeholder.classList.remove('hidden');
+      errorMsg.classList.add('hidden');
+    });
     overlay.querySelector('#sigCancel').addEventListener('click', () => finalizar(null));
     overlay.querySelector('.sig-close-btn').addEventListener('click', () => finalizar(null));
     overlay.querySelector('#sigConfirm').addEventListener('click', () => {
-      if (!tieneTrazo) {
+      if (signaturePad.isEmpty()) {
         errorMsg.classList.remove('hidden');
         return;
       }
-      finalizar(canvas.toDataURL('image/png'));
+      finalizar(signaturePad.toDataURL('image/png'));
     });
 
     // El overlay NO se cierra al hacer click afuera (a diferencia de un
