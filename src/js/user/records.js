@@ -220,6 +220,7 @@ export function initRecords(multiselect, quickVisits) {
       document.querySelectorAll('#msPanel input[type="checkbox"]').forEach(c => c.checked = false);
       multiselect.refreshSelection();
       quickVisits.reset();
+      autoHora = true; // el siguiente registro vuelve a autoactualizarse
       horaEntradaInput.value = new Date().toTimeString().slice(0, 5);
     } catch (err) {
       showToast(err.message);
@@ -299,6 +300,21 @@ export function initRecords(multiselect, quickVisits) {
 
   horaEntradaInput.value = new Date().toTimeString().slice(0, 5);
   loadToday();
+
+  // Auto-actualiza "Hora de entrada" cada pocos segundos, para que no haya
+  // que recargar la página manualmente si el formulario lleva rato abierto
+  // (típico con visitas externas, donde se tarda en llenar el resto de los
+  // datos) y termine rechazándose por salirse del margen de ±3 minutos.
+  // Se detiene sola en cuanto la persona la edita a mano (evento "input" —
+  // los cambios que hace este mismo código con `.value =` no disparan ese
+  // evento, así que no hay conflicto), y vuelve a activarse en automático
+  // después de cada registro exitoso.
+  let autoHora = true;
+  horaEntradaInput.addEventListener('input', () => { autoHora = false; });
+  setInterval(() => {
+    if (!autoHora || document.activeElement === horaEntradaInput) return;
+    horaEntradaInput.value = new Date().toTimeString().slice(0, 5);
+  }, 15000);
 
   return { loadToday };
 }
