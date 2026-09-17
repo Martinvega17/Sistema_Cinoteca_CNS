@@ -81,19 +81,28 @@ async function handleApi(req, res, pathname, searchParams) {
     match.params.forEach((name, i) => { query[name] = groups[i + 1]; });
   }
 
-  const fileUrl = pathToFileURL(path.join(ROOT, match.file)).href;
-  const mod = await import(fileUrl + `?t=${Date.now()}`);
-  const handler = mod.default;
-
-  const fakeReq = { method: req.method, headers: req.headers, query, body: await readBody(req) };
-  const fakeRes = makeRes(res);
-
+  // Todo lo de aquí para abajo —cargar el módulo, leer el body, correr el
+  // handler— vive dentro del mismo try/catch. Antes solo se protegía la
+  // llamada al handler: si fallaba el import() (p. ej. un error de
+  // sintaxis al guardar a medias un archivo) o el parseo del body (JSON
+  // inválido), el error se escapaba de esta función async sin que nadie
+  // lo esperara — eso es una promesa rechazada sin manejar, y Node mata
+  // el proceso completo por eso. Mejor un 500 con el detalle en consola.
   try {
+    const fileUrl = pathToFileURL(path.join(ROOT, match.file)).href;
+    const mod = await import(fileUrl + `?t=${Date.now()}`);
+    const handler = mod.default;
+
+    const fakeReq = { method: req.method, headers: req.headers, query, body: await readBody(req) };
+    const fakeRes = makeRes(res);
+
     await handler(fakeReq, fakeRes);
   } catch (err) {
     console.error(err);
-    res.statusCode = 500;
-    res.end(JSON.stringify({ error: 'Error interno del servidor.' }));
+    if (!res.headersSent) {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ error: 'Error interno del servidor.' }));
+    }
   }
 }
 
@@ -123,4 +132,16 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Servidor de desarrollo en http://localhost:${PORT}`);
+});
+
+// Red de contención: registra cualquier error que se haya escapado de los
+// try/catch de arriba, en vez de dejar que tumbe el servidor completo.
+// Solo pasa en este script de desarrollo — en Vercel cada request es su
+// propia función serverless, así que un error ahí nunca afecta a otras
+// peticiones ni requiere este tipo de red de seguridad.
+process.on('unhandledRejection', (err) => {
+  console.error('Promesa rechazada sin capturar (el servidor sigue corriendo):', err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Excepción no capturada (el servidor sigue corriendo):', err);
 });
