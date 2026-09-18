@@ -4,6 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IPICYT · Bitácora de Acceso a Cintoteca</title>
+<!-- Aplica el tema/acento guardado ANTES de pintar la página (si esto
+     corriera en main.js, se vería un parpadeo del tema oscuro por defecto
+     antes de cambiar al claro guardado). Ver src/js/core/theme.js. -->
+<script>
+(function () {
+  try {
+    var tema = localStorage.getItem('cinoteca:tema') || 'oscuro';
+    var acento = localStorage.getItem('cinoteca:acento') || 'dorado';
+    if (tema === 'claro') document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.setAttribute('data-accent', acento);
+  } catch (e) { /* localStorage bloqueado: se queda con el tema oscuro por defecto */ }
+})();
+</script>
 <link rel="icon" href="src/assets/logo-cns.ico">
 <!-- Tailwind CSS compilado -->
 <link rel="stylesheet" href="css/output.css">

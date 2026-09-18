@@ -17,7 +17,7 @@
             <span id="liveClock" class="font-mono text-sm text-[var(--text-hi)]">--:--:--</span>
           </div>
           <div class="h-8 w-px bg-[var(--line)] hidden sm:block"></div>
-          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--line)] bg-[#0F1822]">
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--line)] bg-[var(--bg-recessed)]">
             <span class="pulse-dot"></span>
             <span class="font-mono text-[11px] text-[var(--ok)] letter-space">SISTEMA ACTIVO</span>
           </div>
@@ -29,5 +29,18 @@
             </div>
             <button type="button" id="logoutBtn" class="btn-outline text-[11px] px-2.5 py-1.5">Salir</button>
           </div>
+        </div>
+      </div>
+
+      <!-- Barra angosta aparte para no apretar el renglón de arriba -->
+      <div class="max-w-7xl mx-auto px-6 pb-2.5 flex justify-end">
+        <div class="theme-switcher" title="Personalizar apariencia">
+          <span class="theme-switcher-label">Apariencia</span>
+          <button type="button" data-tema-btn="oscuro" class="theme-btn" aria-label="Modo oscuro" title="Modo oscuro">🌙</button>
+          <button type="button" data-tema-btn="claro" class="theme-btn" aria-label="Modo claro" title="Modo claro">☀️</button>
+          <span class="theme-sep"></span>
+          <button type="button" data-acento-btn="dorado" class="accent-dot" style="--dot-color:#C79A3E" aria-label="Acento dorado" title="Dorado"></button>
+          <button type="button" data-acento-btn="azul" class="accent-dot" style="--dot-color:#4C82E0" aria-label="Acento azul" title="Azul"></button>
+          <button type="button" data-acento-btn="verde" class="accent-dot" style="--dot-color:#47A578" aria-label="Acento verde" title="Verde"></button>
         </div>
       </div>

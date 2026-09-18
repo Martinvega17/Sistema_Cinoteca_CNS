@@ -1,17 +1,103 @@
+/* =====================================================================
+   PALETA DE COLORES — modo claro/oscuro + 3 acentos de color
+   =====================================================================
+   Todo el archivo usa variables (--bg-panel, --accent, etc.) en vez de
+   colores fijos, así que cambiar de tema/acento es solo cuestión de
+   cambiar qué bloque de variables está activo — el resto del CSS no se
+   toca. El tema se activa con el atributo data-theme="light" en <html>
+   (su ausencia = oscuro, el modo por defecto) y el acento con
+   data-accent="dorado|azul|verde" (ver src/js/core/theme.js).
+
+   --accent-rgb / --teal-rgb / --danger-rgb / --ok-rgb / --shadow-rgb son
+   la versión "R, G, B" (sin rgb()) de su color hermano, para poder usarlas
+   dentro de rgba(var(--x-rgb), alpha) en fondos/bordes translúcidos.
+   ===================================================================== */
 :root {
+    /* ---- Oscuro (predeterminado) ---- */
     --bg-deep: #0B121B;
     --bg-panel: #141E2B;
     --bg-panel-2: #182432;
+    --bg-recessed: #0F1822;
     --line: #26374A;
     --line-soft: #1D2C3D;
     --text-hi: #E9EFF5;
     --text-mid: #9BAEC2;
     --text-dim: #5E7085;
+    --teal: #3E8C93;
+    --teal-rgb: 62, 140, 147;
+    --danger: #B5533C;
+    --danger-rgb: 181, 83, 60;
+    --ok: #4E9E6E;
+    --ok-rgb: 78, 158, 110;
+    --shadow-rgb: 0, 0, 0;
+    --grid-line: rgba(255, 255, 255, 0.015);
+
+    /* ---- Acento: Dorado (predeterminado) ---- */
     --accent: #C79A3E;
     --accent-soft: #8A6E2E;
-    --teal: #3E8C93;
-    --danger: #B5533C;
-    --ok: #4E9E6E;
+    --accent-rgb: 199, 154, 62;
+    --accent-ink: #141005;
+}
+
+/* ---- Modo claro ---- */
+:root[data-theme="light"] {
+    --bg-deep: #F3F5F8;
+    --bg-panel: #FFFFFF;
+    --bg-panel-2: #F7F9FB;
+    --bg-recessed: #ECF0F4;
+    --line: #D7DEE6;
+    --line-soft: #E6EBF0;
+    --text-hi: #182230;
+    --text-mid: #55677C;
+    --text-dim: #8697AA;
+    --teal: #2C7078;
+    --teal-rgb: 44, 112, 120;
+    --danger: #A6432D;
+    --danger-rgb: 166, 67, 45;
+    --ok: #2F7A50;
+    --ok-rgb: 47, 122, 80;
+    --shadow-rgb: 30, 41, 59;
+    --grid-line: rgba(20, 30, 45, 0.04);
+}
+
+/* ---- Acentos de color (independientes del modo claro/oscuro) ---- */
+:root[data-accent="dorado"] {
+    --accent: #C79A3E;
+    --accent-soft: #8A6E2E;
+    --accent-rgb: 199, 154, 62;
+    --accent-ink: #141005;
+}
+:root[data-theme="light"][data-accent="dorado"] {
+    --accent: #A97A22;
+    --accent-soft: #7A5A18;
+    --accent-rgb: 169, 122, 34;
+    --accent-ink: #FFFBF2;
+}
+
+:root[data-accent="azul"] {
+    --accent: #4C82E0;
+    --accent-soft: #2D4F91;
+    --accent-rgb: 76, 130, 224;
+    --accent-ink: #081226;
+}
+:root[data-theme="light"][data-accent="azul"] {
+    --accent: #2D5FC7;
+    --accent-soft: #1E4293;
+    --accent-rgb: 45, 95, 199;
+    --accent-ink: #FFFFFF;
+}
+
+:root[data-accent="verde"] {
+    --accent: #47A578;
+    --accent-soft: #2C6E4E;
+    --accent-rgb: 71, 165, 120;
+    --accent-ink: #06170F;
+}
+:root[data-theme="light"][data-accent="verde"] {
+    --accent: #1F8C5C;
+    --accent-soft: #15603E;
+    --accent-rgb: 31, 140, 92;
+    --accent-ink: #FFFFFF;
 }
 
 * {
@@ -21,16 +107,17 @@
 html,
 body {
     background: var(--bg-deep);
+    transition: background-color .2s ease;
 }
 
 body {
     font-family: 'Inter', sans-serif;
     color: var(--text-hi);
     background-image:
-        radial-gradient(circle at 15% -10%, rgba(62, 140, 147, 0.10), transparent 45%),
-        radial-gradient(circle at 100% 0%, rgba(199, 154, 62, 0.06), transparent 40%),
-        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 34px),
-        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 34px);
+        radial-gradient(circle at 15% -10%, rgba(var(--teal-rgb), 0.10), transparent 45%),
+        radial-gradient(circle at 100% 0%, rgba(var(--accent-rgb), 0.06), transparent 40%),
+        repeating-linear-gradient(0deg, var(--grid-line) 0px, var(--grid-line) 1px, transparent 1px, transparent 34px),
+        repeating-linear-gradient(90deg, var(--grid-line) 0px, var(--grid-line) 1px, transparent 1px, transparent 34px);
 }
 
 .font-display {
@@ -51,7 +138,7 @@ body {
 }
 
 .input-field {
-    background: #0F1822;
+    background: var(--bg-recessed);
     border: 1px solid var(--line);
     color: var(--text-hi);
     border-radius: 6px;
@@ -68,12 +155,12 @@ body {
 .input-field:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(199, 154, 62, 0.15);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
 
 .input-field:disabled {
     color: var(--text-dim);
-    background: #0C141C;
+    background: var(--bg-recessed);
     cursor: not-allowed;
 }
 
@@ -89,7 +176,7 @@ label.field-label {
 
 .btn-primary {
     background: linear-gradient(180deg, var(--accent), var(--accent-soft));
-    color: #141005;
+    color: var(--accent-ink);
     font-weight: 700;
     border-radius: 6px;
     transition: filter .15s ease, transform .1s ease;
@@ -113,7 +200,7 @@ label.field-label {
 }
 
 .btn-outline:hover {
-    background: rgba(62, 140, 147, 0.12);
+    background: rgba(var(--teal-rgb), 0.12);
 }
 
 .btn-danger-outline {
@@ -127,7 +214,7 @@ label.field-label {
 }
 
 .btn-danger-outline:hover {
-    background: rgba(181, 83, 60, 0.14);
+    background: rgba(var(--danger-rgb), 0.14);
 }
 
 .visita-badge {
@@ -143,21 +230,21 @@ label.field-label {
     height: 8px;
     border-radius: 50%;
     background: var(--ok);
-    box-shadow: 0 0 0 0 rgba(78, 158, 110, 0.6);
+    box-shadow: 0 0 0 0 rgba(var(--ok-rgb), 0.6);
     animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
     0% {
-        box-shadow: 0 0 0 0 rgba(78, 158, 110, 0.55);
+        box-shadow: 0 0 0 0 rgba(var(--ok-rgb), 0.55);
     }
 
     70% {
-        box-shadow: 0 0 0 7px rgba(78, 158, 110, 0);
+        box-shadow: 0 0 0 7px rgba(var(--ok-rgb), 0);
     }
 
     100% {
-        box-shadow: 0 0 0 0 rgba(78, 158, 110, 0);
+        box-shadow: 0 0 0 0 rgba(var(--ok-rgb), 0);
     }
 }
 
@@ -177,7 +264,7 @@ label.field-label {
 }
 
 .log-card:hover {
-    background: rgba(199, 154, 62, 0.04);
+    background: rgba(var(--accent-rgb), 0.04);
 }
 
 .log-card .lc-fields {
@@ -258,15 +345,15 @@ label.field-label {
 }
 
 .status-dentro {
-    background: rgba(199, 154, 62, 0.14);
+    background: rgba(var(--accent-rgb), 0.14);
     color: var(--accent);
-    border: 1px solid rgba(199, 154, 62, 0.35);
+    border: 1px solid rgba(var(--accent-rgb), 0.35);
 }
 
 .status-fuera {
-    background: rgba(78, 158, 110, 0.12);
+    background: rgba(var(--ok-rgb), 0.12);
     color: var(--ok);
-    border: 1px solid rgba(78, 158, 110, 0.3);
+    border: 1px solid rgba(var(--ok-rgb), 0.3);
 }
 
 .multiselect {
@@ -274,7 +361,7 @@ label.field-label {
 }
 
 .ms-trigger {
-    background: #0F1822;
+    background: var(--bg-recessed);
     border: 1px solid var(--line);
     color: var(--text-hi);
     border-radius: 6px;
@@ -292,7 +379,7 @@ label.field-label {
 .ms-trigger:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(199, 154, 62, 0.15);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
 
 .ms-placeholder {
@@ -305,10 +392,10 @@ label.field-label {
     left: 0;
     right: 0;
     z-index: 30;
-    background: #101923;
+    background: var(--bg-recessed);
     border: 1px solid var(--line);
     border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 10px 30px rgba(var(--shadow-rgb), 0.45);
     padding: 0.5rem;
     max-height: 220px;
     overflow-y: auto;
@@ -326,7 +413,7 @@ label.field-label {
 }
 
 .ms-option:hover {
-    background: rgba(199, 154, 62, 0.08);
+    background: rgba(var(--accent-rgb), 0.08);
 }
 
 .ms-option input {
@@ -345,7 +432,7 @@ label.field-label {
 
 .ms-add-row input {
     flex: 1;
-    background: #0B121B;
+    background: var(--bg-recessed);
     border: 1px solid var(--line);
     color: var(--text-hi);
     border-radius: 5px;
@@ -360,19 +447,20 @@ label.field-label {
 
 .ms-add-btn {
     background: var(--accent);
-    color: #141005;
+    color: var(--accent-ink);
     border-radius: 5px;
-    padding: 0 0.6rem;
-    font-size: 0.75rem;
+    padding: 0 0.7rem;
+    font-size: 0.8rem;
     font-weight: 700;
+    flex-shrink: 0;
 }
 
 .chip {
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    background: rgba(199, 154, 62, 0.12);
-    border: 1px solid rgba(199, 154, 62, 0.3);
+    gap: 0.35rem;
+    background: rgba(var(--accent-rgb), 0.12);
+    border: 1px solid rgba(var(--accent-rgb), 0.3);
     color: var(--accent);
     font-size: 0.72rem;
     padding: 0.2rem 0.55rem;
@@ -422,7 +510,7 @@ label.field-label {
     bottom: 1.25rem;
     z-index: 100;
     max-width: 320px;
-    background: #101923;
+    background: var(--bg-recessed);
     border: 1px solid var(--line);
     border-left: 3px solid var(--danger);
     color: var(--text-hi);
@@ -430,7 +518,7 @@ label.field-label {
     line-height: 1.4;
     padding: 0.75rem 1rem;
     border-radius: 8px;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 12px 30px rgba(var(--shadow-rgb), 0.45);
     opacity: 0;
     transform: translateY(8px);
     transition: opacity .2s ease, transform .2s ease;
@@ -465,7 +553,7 @@ label.field-label {
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 1.25rem;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 24px 60px rgba(var(--shadow-rgb), 0.5);
 }
 
 .sig-modal-header {
@@ -498,10 +586,10 @@ label.field-label {
     position: relative;
     border: 1px dashed var(--line);
     border-radius: 8px;
-    /* Fondo blanco a propósito: la tinta ahora es negra (ver
-       signature-pad.js) para que sea legible en la bitácora exportada, así
-       que aquí debe verse como firmar sobre papel — negro sobre blanco —
-       en vez de tinta clara sobre un panel oscuro. */
+    /* Fondo blanco a propósito (SIEMPRE, en cualquier tema): la tinta es
+       negra (ver signature-pad.js) para que sea legible en la bitácora
+       exportada, así que aquí debe verse como firmar sobre papel — negro
+       sobre blanco — nunca sobre un panel oscuro. */
     background: #ffffff;
     height: 220px;
 }
@@ -560,8 +648,8 @@ label.field-label {
     font-size: 0.65rem;
     letter-spacing: 0.05em;
     color: var(--teal);
-    background: rgba(62, 140, 147, 0.1);
-    border: 1px solid rgba(62, 140, 147, 0.35);
+    background: rgba(var(--teal-rgb), 0.1);
+    border: 1px solid rgba(var(--teal-rgb), 0.35);
     border-radius: 999px;
     padding: 0.18rem 0.5rem;
     cursor: pointer;
@@ -569,7 +657,7 @@ label.field-label {
 }
 
 .sig-badge:hover {
-    background: rgba(62, 140, 147, 0.2);
+    background: rgba(var(--teal-rgb), 0.2);
 }
 
 .sig-badge-pendiente {
@@ -577,6 +665,72 @@ label.field-label {
     background: transparent;
     border-color: var(--line);
     cursor: default;
+}
+
+/* ---- selector de tema/acento (header) ---- */
+.theme-switcher {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--bg-recessed);
+}
+
+.theme-switcher-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-right: 0.15rem;
+}
+
+.theme-btn {
+    background: transparent;
+    border: none;
+    font-size: 0.8rem;
+    line-height: 1;
+    padding: 0.2rem 0.35rem;
+    border-radius: 999px;
+    opacity: 0.4;
+    transition: opacity .15s ease, background .15s ease;
+}
+
+.theme-btn:hover {
+    opacity: 0.75;
+}
+
+.theme-btn.is-active {
+    opacity: 1;
+    background: rgba(var(--accent-rgb), 0.18);
+}
+
+.theme-sep {
+    width: 1px;
+    height: 15px;
+    background: var(--line);
+    margin: 0 0.05rem;
+}
+
+.accent-dot {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--dot-color);
+    border: 2px solid transparent;
+    padding: 0;
+    cursor: pointer;
+    transition: border-color .15s ease, transform .1s ease;
+}
+
+.accent-dot:hover {
+    transform: scale(1.18);
+}
+
+.accent-dot.is-active {
+    border-color: var(--text-hi);
 }
 
 /* ---- navegación por pestañas ---- */
@@ -627,7 +781,7 @@ label.field-label {
 }
 
 .year-tab.active {
-    color: #141005;
+    color: var(--accent-ink);
     background: var(--accent);
     border-color: var(--accent);
 }
@@ -652,7 +806,7 @@ label.field-label {
 .month-tab.active {
     color: var(--teal);
     border-color: var(--teal);
-    background: rgba(62, 140, 147, 0.14);
+    background: rgba(var(--teal-rgb), 0.14);
 }
 
 /* ---- filas en edición inline (personal / usuarios en Admin) ---- */
@@ -728,7 +882,7 @@ label.field-label {
 }
 
 .data-table tbody tr:hover {
-    background: rgba(199, 154, 62, 0.04);
+    background: rgba(var(--accent-rgb), 0.04);
 }
 
 /* ---- pantalla de login ---- */

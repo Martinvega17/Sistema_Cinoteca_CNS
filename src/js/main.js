@@ -1,5 +1,6 @@
 import { loadPartials } from './core/partials.js';
 import { initClock } from './core/clock.js';
+import { initTheme } from './core/theme.js';
 import { initAuth, wireLoginForm, wireLogoutButton } from './core/auth.js';
 import { initTabs } from './core/tabs.js';
 import { initMultiselect } from './user/multiselect.js';
@@ -15,6 +16,7 @@ import { initAdminPanel } from './admin/admin.js';
 await loadPartials();
 
 initClock();
+initTheme();
 initTabs();
 wireLogoutButton();
 
