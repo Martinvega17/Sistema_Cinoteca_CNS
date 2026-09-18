@@ -1,5 +1,5 @@
 import { query, getClient } from '../_db.js';
-import { requireAuth, logAudit, verifyPassword } from '../_auth.js';
+import { requireAuth, logAudit } from '../_auth.js';
 import { isWithinMargin, todayYMD } from '../../src/js/core/validation.js';
 
 const ENTRY_MARGIN_MINUTES = 3;
@@ -164,46 +164,11 @@ async function handlePost(req, res) {
   res.status(201).json({ folio_grupo: folioGrupo, registros: inserted });
 }
 
-// ---------------------------------------------------------------------------
-// Verifica la segunda autorización requerida para "Borrar todo el
-// historial": debe ser una cuenta activa, con rol Administrador o
-// Responsable institucional, DISTINTA de quien solicita la acción, y con
-// contraseña correcta. Es un control de doble autorización (cuatro ojos),
-// no una simple confirmación de interfaz.
-// ---------------------------------------------------------------------------
-async function verificarSegundoResponsable(usuarioIdSolicitante, segundoUsuario, segundoPassword) {
-  if (!segundoUsuario || !segundoPassword) {
-    return { ok: false, error: 'Se requiere usuario y contraseña de un segundo responsable para autorizar esta acción.' };
-  }
-
-  const { rows } = await query(
-    `SELECT id, password_hash, rol, activo FROM usuarios WHERE usuario = $1`,
-    [segundoUsuario]
-  );
-  const cuenta = rows[0];
-
-  if (!cuenta || !cuenta.activo) {
-    return { ok: false, error: 'El segundo responsable no existe o está inactivo.' };
-  }
-  if (cuenta.id === usuarioIdSolicitante) {
-    return { ok: false, error: 'El segundo responsable debe ser una cuenta distinta a la que solicita la acción (doble autorización).' };
-  }
-  if (!['administrador', 'responsable_institucional'].includes(cuenta.rol)) {
-    return { ok: false, error: 'El segundo responsable debe tener rol de Administrador o Responsable institucional.' };
-  }
-  const passwordOk = await verifyPassword(segundoPassword, cuenta.password_hash);
-  if (!passwordOk) {
-    return { ok: false, error: 'La contraseña del segundo responsable es incorrecta.' };
-  }
-
-  return { ok: true, id: cuenta.id };
-}
-
 // Ejecuta, dentro de UNA transacción, el respaldo (snapshot completo en
 // `respaldos_eliminacion`) y el borrado, para que nunca pueda perderse el
 // respaldo por un borrado exitoso ni quedar un respaldo huérfano de un
 // borrado que falló.
-async function respaldarYBorrar({ tipo, whereSql, whereParams, usuarioId, segundoUsuarioId }) {
+async function respaldarYBorrar({ tipo, whereSql, whereParams, usuarioId }) {
   const client = await getClient();
   try {
     await client.query('BEGIN');
@@ -214,9 +179,9 @@ async function respaldarYBorrar({ tipo, whereSql, whereParams, usuarioId, segund
     );
 
     await client.query(
-      `INSERT INTO respaldos_eliminacion (tipo, usuario_id, segundo_usuario_id, registros)
-       VALUES ($1, $2, $3, $4)`,
-      [tipo, usuarioId, segundoUsuarioId || null, JSON.stringify(registros)]
+      `INSERT INTO respaldos_eliminacion (tipo, usuario_id, registros)
+       VALUES ($1, $2, $3)`,
+      [tipo, usuarioId, JSON.stringify(registros)]
     );
 
     const { rowCount } = await client.query(`DELETE FROM accesos ${whereSql}`, whereParams);
@@ -245,10 +210,7 @@ async function handleDelete(req, res) {
   // Controles exigidos (FA-PT-0002 §8 y Manual de Administrador §3.6):
   //   1. Solo el rol "responsable_institucional" puede solicitarla — un
   //      Administrador ya NO puede ejecutarla por sí solo.
-  //   2. Doble autorización: una segunda cuenta (Administrador o
-  //      Responsable institucional, distinta de quien la solicita) debe
-  //      confirmar con su propio usuario y contraseña.
-  //   3. Respaldo automático e íntegro de los renglones afectados en
+  //   2. Respaldo automático e íntegro de los renglones afectados en
   //      `respaldos_eliminacion` (tabla de solo escritura) ANTES de borrar,
   //      dentro de la misma transacción.
   // -------------------------------------------------------------------
@@ -260,24 +222,15 @@ async function handleDelete(req, res) {
       return;
     }
 
-    const { segundoUsuario, segundoPassword } = req.body || {};
-    const verificacion = await verificarSegundoResponsable(req.user.sub, segundoUsuario, segundoPassword);
-    if (!verificacion.ok) {
-      res.status(403).json({ error: verificacion.error });
-      return;
-    }
-
     const rowCount = await respaldarYBorrar({
       tipo: 'borrar_todo',
       whereSql: '',
       whereParams: [],
-      usuarioId: req.user.sub,
-      segundoUsuarioId: verificacion.id
+      usuarioId: req.user.sub
     });
 
     await logAudit(req.user.sub, 'accesos.borrar_todo', 'accesos:*', {
-      eliminados: rowCount,
-      autorizadoPor: verificacion.id
+      eliminados: rowCount
     });
 
     res.status(200).json({ eliminados: rowCount, todo: true });

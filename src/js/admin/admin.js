@@ -188,13 +188,8 @@ export function initAdminPanel({ onLimpiarHoy, onBorrarTodo } = {}) {
   //   1. Solo la ve/puede accionar una cuenta "responsable_institucional"
   //      (el botón está oculto para Administrador — ver data-responsable-only
   //      en auth.js).
-  //   2. Doble confirmación local (confirm + escribir "BORRAR").
-  //   3. Doble AUTORIZACIÓN real: se pide usuario y contraseña de una
-  //      segunda cuenta (Administrador o Responsable institucional,
-  //      distinta de la que inició sesión), que el servidor valida antes
-  //      de borrar. Sin esto, el servidor rechaza la solicitud aunque el
-  //      rol sea el correcto.
-  //   4. El servidor guarda automáticamente un respaldo completo de los
+  //   2. Confirmación local: ventana de confirmar + escribir "BORRAR".
+  //   3. El servidor guarda automáticamente un respaldo completo de los
   //      registros antes de borrarlos (respaldos_eliminacion) — no depende
   //      de que alguien haya exportado manualmente ese día.
   borrarTodoBtn.addEventListener('click', async () => {
@@ -209,22 +204,9 @@ export function initAdminPanel({ onLimpiarHoy, onBorrarTodo } = {}) {
       return;
     }
 
-    const segundoUsuario = window.prompt(
-      'Autorización requerida: escribe el nombre de USUARIO de un segundo Administrador o Responsable institucional (una cuenta distinta a la tuya).'
-    );
-    if (!segundoUsuario) {
-      showToast('Cancelado: se requiere un segundo usuario que autorice.');
-      return;
-    }
-    const segundoPassword = window.prompt(`Contraseña de "${segundoUsuario}" para autorizar el borrado:`);
-    if (!segundoPassword) {
-      showToast('Cancelado: se requiere la contraseña del segundo usuario.');
-      return;
-    }
-
     borrarTodoBtn.disabled = true;
     try {
-      const resultado = await api.delete('/api/accesos?todo=true', { segundoUsuario, segundoPassword });
+      const resultado = await api.delete('/api/accesos?todo=true');
       showToast(
         resultado.eliminados
           ? `${resultado.eliminados} registro(s) eliminados de TODO el historial (respaldados automáticamente). Folio reiniciado a 001.`

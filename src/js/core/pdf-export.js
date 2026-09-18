@@ -244,7 +244,7 @@ export function exportarAccesosPDF(rows, { titulo = 'Bitácora de Acceso a Cinto
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(7.5);
     doc.setTextColor(...COLOR_TEXTO_TENUE);
-    const nota = 'Cada registro debe completarse de forma legible y sin omisiones. La bitácora debe mantenerse bajo resguardo por un periodo mínimo de 12 meses.';
+    const nota = 'Cada registro debe completarse de forma legible y sin omisiones.';
     doc.text(doc.splitTextToSize(nota, anchoTabla), MARGEN, y);
     doc.setTextColor(...COLOR_TEXTO);
   }
